@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Unserialize</title>
+
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+        <!-- Styles / Scripts -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        @fluxAppearance
+    </head>
+    <body class="font-sans antialiased">
+        <main class="container mx-auto p-8 mt-8">
+            <header>
+                <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl dark:text-white">
+                    Unserialize
+                </h1>
+                <p class="mt-6 text-lg leading-8 text-gray-600">
+                    Hey there! If you're looking to convert serialized data into a readable format like JSON or an Array, PHP's "unserialize" function can help you out. Give it a try and your data will be in a much more manageable format in no time!
+                </p>
+            </header>
+        </main>
+
+        @fluxScripts
+    </body>
+</html>

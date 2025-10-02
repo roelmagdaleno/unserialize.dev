@@ -1,0 +1,126 @@
+:root {
+    /* Light theme colors */
+    --code-bg: #f3f3f3;
+    --code-text: #000;
+    --hl-keyword: #4285F4;
+    --hl-property: #34A853;
+    --hl-type: #EA4334;
+    --hl-generic: #9d3af6;
+    --hl-number: #000;
+    --hl-variable: #000;
+    --hl-comment: #888888;
+    --hl-addition-bg: #00FF0022;
+    --hl-deletion-bg: #FF000011;
+}
+
+html.dark {
+    /* Dark theme colors */
+    --code-bg: #1a1a1a;
+    --code-text: #fafafa;
+    --hl-keyword: #bd7a0b;
+    --hl-property: #cb57ac;
+    --hl-type: #15bccb;
+    --hl-generic: #62c509;
+    --hl-number: #fafafa;
+    --hl-variable: #fafafa;
+    --hl-comment: #888;
+    --hl-addition-bg: #00FF0033;
+    --hl-deletion-bg: #FF000022;
+}
+
+/* Apply the variables */
+pre, code {
+    color: var(--code-text);
+    background-color: var(--code-bg);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.hl-keyword {
+    color: var(--hl-keyword);
+}
+
+.hl-property {
+    color: var(--hl-property);
+}
+
+.hl-attribute {
+    font-style: italic;
+}
+
+.hl-type {
+    color: var(--hl-type);
+}
+
+.hl-generic {
+    color: var(--hl-generic);
+}
+
+.hl-number,
+.hl-literal,
+.hl-value {
+    color: var(--hl-number);
+}
+
+.hl-variable {
+    color: var(--hl-variable);
+}
+
+.hl-comment,
+.hl-comment span {
+    color: var(--hl-comment);
+}
+
+.hl-blur {
+    filter: blur(2px);
+}
+
+.hl-strong {
+    font-weight: bold;
+}
+
+.hl-em {
+    font-style: italic;
+}
+
+.hl-addition {
+    min-width: 100%;
+    background-color: var(--hl-addition-bg);
+}
+
+.hl-deletion {
+    min-width: 100%;
+    background-color: var(--hl-deletion-bg);
+}
+
+.hl-gutter {
+    display: inline-block;
+    font-size: 0.9em;
+    color: #555;
+    padding: 0 1ch;
+    margin-right: 1ch;
+    user-select: none;
+}
+
+.hl-gutter-addition {
+    background-color: #34A853;
+    color: #fff;
+}
+
+.hl-gutter-deletion {
+    background-color: #EA4334;
+    color: #fff;
+}
+
+button[data-clipboard-target] {
+    position: absolute;
+    right: .5rem;
+    top: .5rem;
+    opacity: .25;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+}
+
+button[data-clipboard-target]:hover {
+    opacity: 1;
+}
