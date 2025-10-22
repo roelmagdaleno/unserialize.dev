@@ -23,7 +23,6 @@ class OutputFactory extends Factory
         return [
             'serialized' => $serializedData,
             'unserialized' => $unserializedData,
-            'syntax_highlighted' => (new Highlighter)->parse($unserializedData, OutputFormats::tryFrom($outputFormat)->syntaxLanguage()),
             'output_format' => $outputFormat,
         ];
     }

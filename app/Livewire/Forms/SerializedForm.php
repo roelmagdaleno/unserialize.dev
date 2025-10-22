@@ -52,7 +52,6 @@ class SerializedForm extends Form
         return Output::create([
             'serialized' => $this->serializedData,
             'unserialized' => $unserializedData,
-            'syntax_highlighted' => (new Highlighter)->parse($unserializedData, OutputFormats::tryFrom($this->outputFormat)->syntaxLanguage()),
             'output_format' => $this->outputFormat,
         ]);
     }
