@@ -13,6 +13,15 @@ export default defineConfig({
                 'resources/js/clipboard.js'
             ],
             refresh: true,
+            detectTls: 'unserialize.test',
         }),
     ],
+    server: {
+        cors: {
+            origin: [
+                // Supports: SCHEME://DOMAIN.laravel[:PORT]
+                /^https?:\/\/.*\.test(:\d+)?$/,
+            ],
+        },
+    },
 });
