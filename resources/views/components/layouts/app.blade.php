@@ -49,7 +49,7 @@
         {{ $slot }}
         <footer>
             <p class="mt-8 text-sm text-gray-700 dark:text-gray-300">
-                Made with ❤️ by <a href="https://roelmagdaleno.com" class="text-blue-900 dark:text-blue-300">Roel</a>.
+                Made with ❤️ by <a href="https://github.com/roelmagdaleno" class="text-blue-900 dark:text-blue-300">Roel</a>.
             </p>
         </footer>
     </main>
