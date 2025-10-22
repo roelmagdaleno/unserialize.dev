@@ -8,7 +8,7 @@ let buttonEl = document.querySelector('button[data-clipboard-target]');
 let clipboard = new ClipboardJS('button[data-clipboard-target]');
 
 clipboard.on('success', (element) => {
-    buttonEl.innerHTML = `${clipboardCopiedIcon}`;
+    element.trigger.innerHTML = `${clipboardCopiedIcon}`;
     element.clearSelection();
-    setTimeout(() => buttonEl.innerHTML = `${clipboardIcon}`, 1500);
+    setTimeout(() => element.trigger.innerHTML = `${clipboardIcon}`, 1500);
 });
