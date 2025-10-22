@@ -5,6 +5,7 @@
             wire:model="form.serializedData"
             rows="auto"
             class="font-mono text-sm md:text-base"
+            autofocus="autofocus"
         />
 
         <div class="mt-6 md:flex items-center justify-between">
