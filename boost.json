@@ -1,0 +1,20 @@
+{
+    "agents": [
+        "claude_code",
+        "codex"
+    ],
+    "cloud": false,
+    "guidelines": true,
+    "mcp": true,
+    "nightwatch": true,
+    "sail": false,
+    "skills": [
+        "infer-conventions",
+        "laravel-best-practices",
+        "testing-best-practices",
+        "configure-nightwatch",
+        "fluxui-development",
+        "livewire-development",
+        "tailwindcss-development"
+    ]
+}
