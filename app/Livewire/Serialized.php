@@ -2,23 +2,24 @@
 
 namespace App\Livewire;
 
-use App\Enums\OutputFormats;
+use App\Enums\OutputFormat;
 use App\Livewire\Forms\SerializedForm;
 use Exception;
-use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
-use Illuminate\Foundation\Application;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class Serialized extends Component
 {
+    private const int MAX_ATTEMPTS = 10;
+
     /**
      * The serialized form.
      *
      * @since 1.0.0
-     *
-     * @var SerializedForm The serialized form.
      */
     public SerializedForm $form;
 
@@ -26,8 +27,6 @@ class Serialized extends Component
      * The output formats.
      *
      * @since 1.0.0
-     *
-     * @var array The output formats.
      */
     #[Locked]
     public array $outputFormats = [];
@@ -41,7 +40,7 @@ class Serialized extends Component
      */
     public function mount(): void
     {
-        $this->outputFormats = OutputFormats::toArray();
+        $this->outputFormats = OutputFormat::toArray();
     }
 
     /**
@@ -51,13 +50,29 @@ class Serialized extends Component
      *
      * @throws Exception If unserialize fails.
      */
-    public function unserialize(): void
+    public function unserialize(Request $request): void
     {
+        $rateLimitKey = 'unserialize:'.hash('sha256', $request->ip());
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, self::MAX_ATTEMPTS)) {
+            $seconds = RateLimiter::availableIn($rateLimitKey);
+            $this->addError(
+                'form.serializedData',
+                "Too many conversion attempts. Please try again in {$seconds} seconds.",
+            );
+
+            return;
+        }
+
+        RateLimiter::hit($rateLimitKey, 60);
+
         try {
             $output = $this->form->submit();
             $this->redirectRoute('outputs', $output);
-        } catch (Exception $e) {
-            $this->addError('form.serializedData', $e->getMessage());
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Exception $exception) {
+            $this->addError('form.serializedData', $exception->getMessage());
         }
     }
 
@@ -65,10 +80,8 @@ class Serialized extends Component
      * Render the view.
      *
      * @since 1.0.0
-     *
-     * @return Application|Factory|View|\Illuminate\View\View The rendered view.
      */
-    public function render(): Application|Factory|View|\Illuminate\View\View
+    public function render(): View
     {
         return view('livewire.serialized');
     }

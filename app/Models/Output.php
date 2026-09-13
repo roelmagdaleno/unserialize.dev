@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\OutputFormats;
+use App\Enums\OutputFormat;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,7 +25,7 @@ class Output extends Model
     protected function casts(): array
     {
         return [
-            'output_format' => OutputFormats::class,
+            'output_format' => OutputFormat::class,
         ];
     }
 
@@ -33,10 +33,9 @@ class Output extends Model
      * Get the syntax highlighted attribute.
      *
      * @since 1.0.0
-     *
-     * @return Attribute The syntax highlighted attribute.
      */
-    protected function syntaxHighlighted(): Attribute {
+    protected function syntaxHighlighted(): Attribute
+    {
         return Attribute::make(
             get: fn () => (new Highlighter)->parse($this->unserialized, $this->output_format->syntaxLanguage()),
         );

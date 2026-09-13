@@ -2,9 +2,8 @@
 
 namespace App\Livewire;
 
-use Illuminate\Contracts\View\Factory;
+use App\Models\Output as OutputModel;
 use Illuminate\Contracts\View\View;
-use Illuminate\Foundation\Application;
 use Livewire\Component;
 
 class Output extends Component
@@ -13,10 +12,8 @@ class Output extends Component
      * The output model.
      *
      * @since 1.0.0
-     *
-     * @var \App\Models\Output The output model.
      */
-    public \App\Models\Output $output;
+    public OutputModel $output;
 
     /**
      * Mount the component.
@@ -24,10 +21,8 @@ class Output extends Component
      * Set the output formats and more.
      *
      * @since 1.0.0
-     *
-     * @param  \App\Models\Output  $output  The output model.
      */
-    public function mount(\App\Models\Output $output): void
+    public function mount(OutputModel $output): void
     {
         $this->output = $output;
     }
@@ -36,10 +31,8 @@ class Output extends Component
      * Render the view.
      *
      * @since 1.0.0
-     *
-     * @return Application|Factory|View|\Illuminate\View\View The rendered view.
      */
-    public function render(): Application|Factory|View|\Illuminate\View\View
+    public function render(): View
     {
         return view('livewire.output');
     }

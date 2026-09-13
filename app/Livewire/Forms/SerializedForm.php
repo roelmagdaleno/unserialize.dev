@@ -2,14 +2,13 @@
 
 namespace App\Livewire\Forms;
 
-use App\Enums\OutputFormats;
+use App\Enums\OutputFormat;
 use App\Models\Output;
 use App\Rules\SerializedRule;
 use App\Services\Serialized;
 use Exception;
 use Illuminate\Validation\Rule;
 use Livewire\Form;
-use Tempest\Highlight\Highlighter;
 
 class SerializedForm extends Form
 {
@@ -17,8 +16,6 @@ class SerializedForm extends Form
      * The serialized data.
      *
      * @since 1.0.0
-     *
-     * @var string The serialized data.
      */
     public string $serializedData = 'a:10:{s:4:"name";s:6:"Chrome";s:7:"version";s:9:"103.0.0.0";s:8:"platform";s:7:"Windows";s:10:"update_url";s:29:"https://www.google.com/chrome";s:7:"img_src";s:44:"https://s.w.org/images/browsers/chrome.png?1";s:11:"img_src_ssl";s:44:"https://s.w.org/images/browsers/chrome.png?1";s:15:"current_version";s:2:"18";s:7:"upgrade";b:0;s:8:"insecure";b:0;s:6:"mobile";b:0;}';
 
@@ -26,10 +23,8 @@ class SerializedForm extends Form
      * The output format.
      *
      * @since 1.0.0
-     *
-     * @var string The output format.
      */
-    public string $outputFormat = OutputFormats::JSON->value;
+    public string $outputFormat = OutputFormat::JSON->value;
 
     /**
      * Submit the form.
@@ -37,8 +32,6 @@ class SerializedForm extends Form
      * Output the data and save it to the database.
      *
      * @since 1.0.0
-     *
-     * @return Output The unserialized model.
      *
      * @throws Exception If the unserialize fails.
      */
@@ -60,14 +53,12 @@ class SerializedForm extends Form
      * Get the validation rules.
      *
      * @since 1.0.0
-     *
-     * @return array The validation rules.
      */
     protected function rules(): array
     {
         return [
-            'serializedData' => ['required', new SerializedRule],
-            'outputFormat' => Rule::in(array_keys(OutputFormats::toArray())),
+            'serializedData' => ['bail', 'required', 'string', 'max:262144', new SerializedRule],
+            'outputFormat' => Rule::in(array_keys(OutputFormat::toArray())),
         ];
     }
 }

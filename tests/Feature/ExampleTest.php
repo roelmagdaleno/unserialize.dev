@@ -1,7 +1,7 @@
 <?php
 
-it('returns a successful response', function () {
-    $response = $this->get('/');
-
-    $response->assertStatus(200);
+it('renders the application title', function () {
+    $this->get('/')
+        ->assertOk()
+        ->assertSee('<title>Unserialize - Convert your serialized data into a readable format</title>', false);
 });

@@ -2,63 +2,73 @@
 
 use App\Livewire\Serialized;
 use App\Models\Output;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 
-uses(RefreshDatabase::class);
+beforeEach(function () {
+    RateLimiter::clear('unserialize:'.hash('sha256', '127.0.0.1'));
+});
 
-it('gets the serialized component on home page', function () {
+it('renders the converter on the home page', function () {
     $this->get('/')->assertSeeLivewire(Serialized::class);
 });
 
-it('sets the form properties', function () {
-    $serializedData = 'a:10:{s:4:"name";s:6:"Chrome";s:7:"version";s:9:"103.0.0.0";s:8:"platform";s:7:"Windows";s:10:"update_url";s:29:"https://www.google.com/chrome";s:7:"img_src";s:44:"https://s.w.org/images/browsers/chrome.png?1";s:11:"img_src_ssl";s:44:"https://s.w.org/images/browsers/chrome.png?1";s:15:"current_version";s:2:"18";s:7:"upgrade";b:0;s:8:"insecure";b:0;s:6:"mobile";b:0;}';
-
-    // `$serializedData` is set in the `SerializedForm` class.
+it('validates required and serialized input with user-visible messages', function (string $serializedData, string $message) {
     Livewire::test(Serialized::class)
         ->set('form.serializedData', $serializedData)
-        ->assertSet('form.serializedData', $serializedData);
+        ->call('unserialize')
+        ->assertHasErrors('form.serializedData')
+        ->assertSee($message);
 
-    // `$outputFormat` is set in the `SerializedForm` class.
+    $this->assertDatabaseCount('outputs', 0);
+})->with([
+    'required input' => ['', 'The serialized data field is required.'],
+    'valid serialized input' => ['invalid', 'The data is not valid serialized data.'],
+]);
+
+it('rejects serialized input larger than 256 KiB before persistence', function () {
+    $serializedData = serialize(str_repeat('a', (256 * 1024) + 1));
+
     Livewire::test(Serialized::class)
-        ->set('form.outputFormat', 'json')
-        ->assertSet('form.outputFormat', 'json');
+        ->set('form.serializedData', $serializedData)
+        ->call('unserialize')
+        ->assertHasErrors(['form.serializedData' => 'max'])
+        ->assertSee('The serialized data field must not be greater than 262144 characters.');
+
+    $this->assertDatabaseCount('outputs', 0);
 });
 
-it('looks the form properties for errors', function () {
-    // The `serializedData` property is required.
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', '')
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData');
-
-    // The `serializedData` property must be a valid-serialized string.
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'invalid')
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData');
-});
-
-it('redirects to output component after submit form', function () {
-    Livewire::test(Serialized::class)
-        ->call('unserialize')
-        ->assertRedirect();
-});
-
-it('saves the output to the database', function () {
+it('saves a valid conversion and redirects to its named output route', function () {
     $serializedData = 'a:1:{s:4:"name";s:6:"Chrome";}';
 
-    Livewire::test(Serialized::class)
+    $component = Livewire::test(Serialized::class)
         ->set('form.serializedData', $serializedData)
         ->set('form.outputFormat', 'json')
         ->call('unserialize');
+    $output = Output::sole();
 
-    // Get last output from the database.
-    $output = Output::latest()->first();
+    $component->assertRedirectToRoute('outputs', $output);
+    $this->assertDatabaseHas('outputs', [
+        'id' => $output->id,
+        'serialized' => $serializedData,
+        'unserialized' => "{\n    \"name\": \"Chrome\"\n}",
+        'output_format' => 'json',
+    ]);
+});
 
-    // Check if the output is saved to the database.
-    $this->assertDatabaseCount('outputs', 1);
+it('blocks the eleventh conversion attempt for an IP address', function () {
+    foreach (range(1, 10) as $attempt) {
+        Livewire::test(Serialized::class)
+            ->set('form.serializedData', 'invalid')
+            ->call('unserialize')
+            ->assertHasErrors('form.serializedData');
+    }
 
-    expect($output->serialized)->toBe($serializedData)
-        ->and($output->id)->toBeUuid();
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'i:1;')
+        ->call('unserialize')
+        ->assertHasErrors('form.serializedData')
+        ->assertSee('Too many conversion attempts. Please try again in 60 seconds.');
+
+    $this->assertDatabaseCount('outputs', 0);
 });

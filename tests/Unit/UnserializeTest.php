@@ -2,65 +2,62 @@
 
 use App\Services\Serialized;
 
-beforeEach(function () {
-    $this->serializedData = 'a:10:{s:4:"name";s:6:"Chrome";s:7:"version";s:9:"103.0.0.0";s:8:"platform";s:7:"Windows";s:10:"update_url";s:29:"https://www.google.com/chrome";s:7:"img_src";s:44:"https://s.w.org/images/browsers/chrome.png?1";s:11:"img_src_ssl";s:44:"https://s.w.org/images/browsers/chrome.png?1";s:15:"current_version";s:2:"18";s:7:"upgrade";b:0;s:8:"insecure";b:0;s:6:"mobile";b:0;}';
+it('converts serialized values to JSON', function (string $serializedData, string $expected) {
+    $output = (new Serialized($serializedData, 'json'))->output();
+
+    expect($output)->toBe($expected);
+})->with([
+    'integer zero' => ['i:0;', '0'],
+    'false' => ['b:0;', 'false'],
+    'null' => ['N;', 'null'],
+    'string' => ['s:5:"hello";', '"hello"'],
+    'array' => ['a:1:{s:4:"name";s:6:"Chrome";}', "{\n    \"name\": \"Chrome\"\n}"],
+]);
+
+it('converts serialized values to PHP arrays', function (string $serializedData, string $expected) {
+    $output = (new Serialized($serializedData, 'array'))->output();
+
+    expect($output)->toBe($expected);
+})->with([
+    'integer zero' => ['i:0;', '0'],
+    'false' => ['b:0;', 'false'],
+    'null' => ['N;', 'null'],
+    'string' => ['s:5:"hello";', "'hello'"],
+    'array' => ['a:1:{s:4:"name";s:6:"Chrome";}', "[\n    'name' => 'Chrome'\n]"],
+]);
+
+it('rejects an unsupported output format', function () {
+    (new Serialized('i:0;', 'invalid'))->output();
+})->throws(Exception::class, 'Invalid output format.');
+
+it('rejects invalid serialized data', function (string $serializedData) {
+    (new Serialized($serializedData))->output();
+})->throws(Exception::class, 'Invalid serialized data.')
+    ->with([
+        'empty input' => '',
+        'missing terminator' => 'b:0',
+        'plain text' => 'invalid',
+    ]);
+
+it('reports JSON encoding failures without internal details', function () {
+    (new Serialized('a:1:{s:5:"value";d:NAN;}'))->output();
+})->throws(Exception::class, 'Failed to encode the serialized data to JSON.');
+
+it('rejects serialized objects without invoking magic methods', function () {
+    SerializedObjectWithWakeup::$wasInvoked = false;
+    $serializedData = serialize(new SerializedObjectWithWakeup);
+
+    expect(fn () => (new Serialized($serializedData))->output())
+        ->toThrow(Exception::class, 'Serialized objects are not supported.')
+        ->and(SerializedObjectWithWakeup::$wasInvoked)->toBeFalse();
 });
 
-it('unserialize the serialized data', function () {
-    try {
-        $serialized = new Serialized($this->serializedData, 'json');
-        $unserializedData = $serialized->output();
+class SerializedObjectWithWakeup
+{
+    public static bool $wasInvoked = false;
 
-        expect($unserializedData)->toBeJson();
-    } catch (Exception $e) {
+    public function __wakeup(): void
+    {
+        self::$wasInvoked = true;
     }
-});
-
-it('unserialize the serialized data with array output format', function () {
-    try {
-        $serialized = new Serialized($this->serializedData, 'array');
-        $unserializedData = $serialized->output();
-
-        expect($unserializedData)->toBeString();
-    } catch (Exception $e) {
-    }
-});
-
-it('unserialize the serialized data with invalid output format', function () {
-    $serialized = new Serialized($this->serializedData, 'invalid');
-    $serialized->output();
-})->throws('Invalid output format.');
-
-it('unserialize the serialized data with invalid serialized data', function () {
-    $serialized = new Serialized('invalid', 'json');
-    $serialized->output();
-})->throws('Invalid serialized data.');
-
-it('tries to unserialize empty data', function () {
-    $serialized = new Serialized('', 'json');
-    $serialized->output();
-})->throws('Invalid serialized data.');
-
-it('tries to unserialize a false value', function () {
-    $serialized = new Serialized('b:0;', 'json');
-    $output = $serialized->output();
-
-    expect($output)->toBeJson();
-});
-
-it('tries to unserialize a serialized less than 4 characters', function () {
-    $serialized = new Serialized('b:0', 'json');
-    $serialized->output();
-})->throws('Invalid serialized data.');
-
-it('tries to unserialized a null value', function () {
-    $serialized = new Serialized('N;', 'json');
-    $output = $serialized->output();
-
-    expect($output)->toBeJson();
-});
-
-it('tries to unserialized NaN value', function () {
-    $serialized = new Serialized('a:1:{s:5:"value";d:NAN;}', 'json');
-    $serialized->output();
-})->throws('Failed to encode the serialized data to JSON.');
+}

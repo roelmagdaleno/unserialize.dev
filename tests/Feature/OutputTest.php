@@ -11,13 +11,28 @@ it('gets the output component on output page', function () {
     $output = Output::factory()->create();
 
     $this->get('/o/'.$output->id)
-        ->assertSeeLivewire(\App\Livewire\Output::class);
+        ->assertSeeLivewire(App\Livewire\Output::class);
 });
 
 it('sees the output data on output page', function () {
     $output = Output::factory()->create();
 
-    Livewire::test(\App\Livewire\Output::class, ['output' => $output])
+    Livewire::test(App\Livewire\Output::class, ['output' => $output])
         ->assertSee('Output: JSON')
         ->assertSee($output->created_at);
+});
+
+it('escapes stored serialized data while rendering highlighted output markup', function () {
+    $serializedData = 's:29:"<script>alert(\'xss\')</script>";';
+    $output = Output::factory()->create([
+        'serialized' => $serializedData,
+        'unserialized' => '"<script>alert(\'xss\')</script>"',
+    ]);
+
+    $response = $this->get(route('outputs', $output));
+
+    $response
+        ->assertSee($serializedData)
+        ->assertDontSee($serializedData, false)
+        ->assertSee($output->syntax_highlighted, false);
 });

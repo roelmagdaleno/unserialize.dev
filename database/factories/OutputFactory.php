@@ -2,11 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Enums\OutputFormats;
 use App\Models\Output;
 use App\Services\Serialized;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Tempest\Highlight\Highlighter;
 
 class OutputFactory extends Factory
 {

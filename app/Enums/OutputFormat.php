@@ -2,18 +2,11 @@
 
 namespace App\Enums;
 
-enum OutputFormats: string
+enum OutputFormat: string
 {
     case JSON = 'json';
     case ARRAY = 'array';
 
-    /**
-     * Get the syntax language.
-     *
-     * @since 1.0.0
-     *
-     * @return string The syntax language.
-     */
     public function syntaxLanguage(): string
     {
         return match ($this) {
@@ -22,13 +15,6 @@ enum OutputFormats: string
         };
     }
 
-    /**
-     * Get the label.
-     *
-     * @since 1.0.0
-     *
-     * @return string The label.
-     */
     public function label(): string
     {
         return match ($this) {
@@ -37,18 +23,12 @@ enum OutputFormats: string
         };
     }
 
-    /**
-     * Get the output formats as an array.
-     *
-     * @since 1.0.0
-     *
-     * @return string[] The output formats.
-     */
+    /** @return array<string, string> */
     public static function toArray(): array
     {
         return [
-            'json' => 'JSON',
-            'array' => 'Array',
+            self::JSON->value => self::JSON->label(),
+            self::ARRAY->value => self::ARRAY->label(),
         ];
     }
 }

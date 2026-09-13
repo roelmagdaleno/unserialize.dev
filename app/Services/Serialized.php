@@ -2,31 +2,33 @@
 
 namespace App\Services;
 
-use App\Enums\OutputFormats;
+use App\Enums\OutputFormat;
 use Brick\VarExporter\VarExporter;
 use Exception;
+use JsonException;
+use ReflectionReference;
+use Throwable;
 
 class Serialized
 {
+    private bool $hasDecoded = false;
+
+    private mixed $decodedData;
+
     /**
      * Serialized constructor.
      *
      * @since 1.0.0
-     *
-     * @param  string  $serializedData  The serialized data.
-     * @param  string  $outputFormat  The output format (`json` by default).
      */
     public function __construct(
         public string $serializedData,
-        public string $outputFormat = OutputFormats::JSON->value,
+        public string $outputFormat = OutputFormat::JSON->value,
     ) {}
 
     /**
      * Output the serialized data.
      *
      * @since 1.0.0
-     *
-     * @return string The output.
      *
      * @throws Exception If the output format is invalid.
      */
@@ -46,24 +48,17 @@ class Serialized
      *
      * @since 1.0.0
      *
-     * @return string The JSON string.
-     *
      * @throws Exception If the serialized data is invalid.
      */
     public function toJson(): string
     {
-        if (! $this->isValid()) {
-            throw new Exception('Invalid serialized data.');
-        }
-
         $flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES;
-        $json = json_encode(@unserialize($this->serializedData), $flags);
 
-        if ($json === false) {
+        try {
+            return json_encode($this->decode(), $flags | JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
             throw new Exception('Failed to encode the serialized data to JSON.');
         }
-
-        return $json;
     }
 
     /**
@@ -71,52 +66,111 @@ class Serialized
      *
      * @since 1.0.0
      *
-     * @return string The array string.
-     *
      * @throws Exception If the serialized data is invalid.
      */
     public function toArray(): string
     {
-        $unserialized = $this->toJson();
-
-        return $unserialized ? VarExporter::export(json_decode($unserialized, true)) : false;
+        return VarExporter::export($this->decode());
     }
 
     /**
      * Check if the serialized data is valid.
      *
      * @since 1.0.0
-     *
-     * @return bool True if the serialized data is valid, false otherwise.
      */
     public function isValid(): bool
     {
-        // Check for empty input
-        if (empty($this->serializedData) || ! is_string($this->serializedData)) {
+        try {
+            $this->decode();
+        } catch (Exception) {
             return false;
         }
 
-        // Check if string is a valid serialized "false" value
-        if ($this->serializedData === 'b:0;') {
+        return true;
+    }
+
+    /**
+     * Safely decode the serialized value once.
+     *
+     * @throws Exception If the serialized data is invalid or contains an object.
+     */
+    private function decode(): mixed
+    {
+        if ($this->hasDecoded) {
+            return $this->decodedData;
+        }
+
+        if ($this->serializedData === '') {
+            throw new Exception('Invalid serialized data.');
+        }
+
+        $unserializeFailed = false;
+        set_error_handler(static function () use (&$unserializeFailed): bool {
+            $unserializeFailed = true;
+
+            return true;
+        });
+
+        try {
+            $decodedData = unserialize($this->serializedData, [
+                'allowed_classes' => false,
+                'max_depth' => 512,
+            ]);
+        } catch (Throwable) {
+            throw new Exception('Invalid serialized data.');
+        } finally {
+            restore_error_handler();
+        }
+
+        if ($unserializeFailed || ($decodedData === false && $this->serializedData !== 'b:0;')) {
+            throw new Exception('Invalid serialized data.');
+        }
+
+        $visitedReferences = [];
+
+        if ($this->containsObject($decodedData, $visitedReferences)) {
+            throw new Exception('Serialized objects are not supported.');
+        }
+
+        $this->decodedData = $decodedData;
+        $this->hasDecoded = true;
+
+        return $this->decodedData;
+    }
+
+    /**
+     * Determine whether a decoded value contains an object without looping over references.
+     *
+     * @param  array<string, true>  $visitedReferences
+     */
+    private function containsObject(mixed &$value, array &$visitedReferences): bool
+    {
+        if (is_object($value)) {
             return true;
         }
 
-        // Special case: serialize(null) returns "N;"
-        if ($this->serializedData === 'N;') {
-            return true;
-        }
-
-        if (strlen($this->serializedData) < 4) {
+        if (! is_array($value)) {
             return false;
         }
 
-        if ($this->serializedData[1] !== ':') {
-            return false;
+        foreach (array_keys($value) as $key) {
+            $reference = ReflectionReference::fromArrayElement($value, $key);
+
+            if ($reference !== null) {
+                $referenceId = bin2hex($reference->getId());
+
+                if (isset($visitedReferences[$referenceId])) {
+                    continue;
+                }
+
+                $visitedReferences[$referenceId] = true;
+            }
+
+            if ($this->containsObject($value[$key], $visitedReferences)) {
+                return true;
+            }
         }
 
-        // Attempt to unserialize
-        $data = @unserialize($this->serializedData);
-
-        return $data !== false;
+        return false;
     }
 }
