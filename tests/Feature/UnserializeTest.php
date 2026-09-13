@@ -1,7 +1,6 @@
 <?php
 
 use App\Livewire\Serialized;
-use App\Models\Output;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Livewire;
 
@@ -26,7 +25,7 @@ it('validates required and serialized input with user-visible messages', functio
     $this->assertDatabaseCount('outputs', 0);
 })->with([
     'required input' => ['', 'The serialized data field is required.'],
-    'valid serialized input' => ['invalid', 'The data is not valid serialized data.'],
+    'invalid serialized input' => ['invalid', 'Invalid serialized data.'],
 ]);
 
 it('rejects serialized input larger than 256 KiB before persistence', function () {
@@ -35,27 +34,33 @@ it('rejects serialized input larger than 256 KiB before persistence', function (
     Livewire::test(Serialized::class)
         ->set('form.serializedData', $serializedData)
         ->call('unserialize')
-        ->assertHasErrors(['form.serializedData' => 'max'])
-        ->assertSee('The serialized data field must not be greater than 262144 characters.');
+        ->assertHasErrors('form.serializedData')
+        ->assertSee('The serialized data must not be greater than 262,144 bytes.');
 
     $this->assertDatabaseCount('outputs', 0);
 });
 
-it('saves a valid conversion and redirects to its named output route', function () {
+it('displays a valid conversion without persisting it', function () {
     $serializedData = 'a:1:{s:4:"name";s:6:"Chrome";}';
 
-    $component = Livewire::test(Serialized::class)
+    Livewire::test(Serialized::class)
         ->set('form.serializedData', $serializedData)
-        ->call('unserialize');
-    $output = Output::sole();
+        ->call('unserialize')
+        ->assertNoRedirect()
+        ->assertSee('"name": "Chrome"')
+        ->assertSee('This result is not retained by Unserialize.');
 
-    $component->assertRedirectToRoute('outputs', $output);
-    $this->assertDatabaseHas('outputs', [
-        'id' => $output->id,
-        'serialized' => $serializedData,
-        'unserialized' => "{\n    \"name\": \"Chrome\"\n}",
-        'output_format' => 'json',
-    ]);
+    $this->assertDatabaseCount('outputs', 0);
+});
+
+it('shows specific feedback for serialized objects without persistence', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'O:8:"stdClass":0:{}')
+        ->call('unserialize')
+        ->assertHasErrors('form.serializedData')
+        ->assertSee('Serialized objects are not supported.');
+
+    $this->assertDatabaseCount('outputs', 0);
 });
 
 it('blocks the eleventh conversion attempt for an IP address', function () {

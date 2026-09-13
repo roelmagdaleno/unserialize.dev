@@ -2,8 +2,8 @@
 
 namespace App\Livewire;
 
+use App\Exceptions\ConversionException;
 use App\Livewire\Forms\SerializedForm;
-use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -21,12 +21,12 @@ class Serialized extends Component
      */
     public SerializedForm $form;
 
+    public ?string $result = null;
+
     /**
      * Start the unserialize process.
      *
      * @since 1.0.0
-     *
-     * @throws Exception If unserialize fails.
      */
     public function unserialize(Request $request): void
     {
@@ -45,11 +45,11 @@ class Serialized extends Component
         RateLimiter::hit($rateLimitKey, 60);
 
         try {
-            $output = $this->form->submit();
-            $this->redirectRoute('outputs', $output);
+            $this->result = $this->form->submit()->json;
         } catch (ValidationException $exception) {
             throw $exception;
-        } catch (Exception $exception) {
+        } catch (ConversionException $exception) {
+            $this->result = null;
             $this->addError('form.serializedData', $exception->getMessage());
         }
     }

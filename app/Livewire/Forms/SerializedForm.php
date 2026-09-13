@@ -2,11 +2,8 @@
 
 namespace App\Livewire\Forms;
 
-use App\Enums\OutputFormat;
-use App\Models\Output;
-use App\Rules\SerializedRule;
+use App\Data\ConversionResult;
 use App\Services\Serialized;
-use Exception;
 use Livewire\Form;
 
 class SerializedForm extends Form
@@ -21,24 +18,13 @@ class SerializedForm extends Form
     /**
      * Submit the form.
      *
-     * Output the data and save it to the database.
-     *
      * @since 1.0.0
-     *
-     * @throws Exception If the unserialize fails.
      */
-    public function submit(): Output
+    public function submit(): ConversionResult
     {
         $this->validate();
 
-        $serialized = new Serialized($this->serializedData);
-        $unserializedData = $serialized->output();
-
-        return Output::create([
-            'serialized' => $this->serializedData,
-            'unserialized' => $unserializedData,
-            'output_format' => OutputFormat::JSON->value,
-        ]);
+        return (new Serialized($this->serializedData))->convert();
     }
 
     /**
@@ -49,7 +35,7 @@ class SerializedForm extends Form
     protected function rules(): array
     {
         return [
-            'serializedData' => ['bail', 'required', 'string', 'max:262144', new SerializedRule],
+            'serializedData' => ['bail', 'required', 'string'],
         ];
     }
 }

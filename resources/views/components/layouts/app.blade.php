@@ -6,6 +6,10 @@
 
         <title>{{ $title ?? 'Unserialize - Convert PHP serialized data to JSON' }}</title>
 
+        @if(Route::is('outputs'))
+            <meta name="robots" content="noindex, nofollow, noarchive">
+        @endif
+
         <!-- Meta Tags -->
         <meta name="description" content="Convert PHP serialized data into clean, readable JSON quickly and easily.">
         <meta property="og:title" content="Unserialize - Convert PHP serialized data to JSON">
@@ -30,7 +34,7 @@
         <!-- Styles / Scripts -->
         @vite(['resources/css/app.css'])
 
-        @if(Route::is('outputs'))
+        @if(Route::is('home', 'outputs'))
             @vite(['resources/css/code.css', 'resources/js/clipboard.js'])
         @endif
 
@@ -67,6 +71,7 @@
         <footer>
             <p class="mt-8 text-sm text-gray-700 dark:text-gray-300">
                 Built with ❤️ by <a href="https://github.com/roelmagdaleno" class="text-blue-900 dark:text-blue-300">Roel</a>.
+                <a href="{{ route('privacy') }}" class="ml-3 text-blue-900 dark:text-blue-300">Privacy</a>
             </p>
         </footer>
     </main>

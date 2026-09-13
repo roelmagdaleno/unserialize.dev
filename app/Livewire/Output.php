@@ -4,8 +4,10 @@ namespace App\Livewire;
 
 use App\Models\Output as OutputModel;
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('components.layouts.app')]
 class Output extends Component
 {
     /**

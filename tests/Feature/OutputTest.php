@@ -11,7 +11,16 @@ it('gets the output component on output page', function () {
     $output = Output::factory()->create();
 
     $this->get('/o/'.$output->id)
-        ->assertSeeLivewire(App\Livewire\Output::class);
+        ->assertSeeLivewire(App\Livewire\Output::class)
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
+        ->assertSee('<meta name="robots" content="noindex, nofollow, noarchive">', false)
+        ->assertDontSee('<link rel="canonical"', false);
+});
+
+it('returns noindex for a missing legacy output', function () {
+    $this->get('/o/'.fake()->uuid())
+        ->assertNotFound()
+        ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
 });
 
 it('sees the output data on output page', function () {

@@ -2,13 +2,17 @@
 
 namespace App\Services;
 
-use Exception;
+use App\Data\ConversionResult;
+use App\Enums\ConversionErrorCode;
+use App\Exceptions\ConversionException;
 use JsonException;
 use ReflectionReference;
 use Throwable;
 
 class Serialized
 {
+    public const int MAX_INPUT_BYTES = 262144;
+
     private bool $hasDecoded = false;
 
     private mixed $decodedData;
@@ -31,7 +35,26 @@ class Serialized
      */
     public function output(): string
     {
-        return $this->toJson();
+        return $this->convert()->json;
+    }
+
+    /**
+     * Convert serialized PHP data into a native value and JSON representation.
+     *
+     * @throws ConversionException
+     */
+    public function convert(): ConversionResult
+    {
+        $decodedData = $this->decode();
+        $flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES;
+
+        try {
+            $json = json_encode($decodedData, $flags | JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            throw new ConversionException(ConversionErrorCode::EncodingFailed);
+        }
+
+        return new ConversionResult($decodedData, $json);
     }
 
     /**
@@ -43,13 +66,7 @@ class Serialized
      */
     public function toJson(): string
     {
-        $flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES;
-
-        try {
-            return json_encode($this->decode(), $flags | JSON_THROW_ON_ERROR);
-        } catch (JsonException) {
-            throw new Exception('Failed to encode the serialized data to JSON.');
-        }
+        return $this->convert()->json;
     }
 
     /**
@@ -61,7 +78,7 @@ class Serialized
     {
         try {
             $this->decode();
-        } catch (Exception) {
+        } catch (ConversionException) {
             return false;
         }
 
@@ -80,7 +97,11 @@ class Serialized
         }
 
         if ($this->serializedData === '') {
-            throw new Exception('Invalid serialized data.');
+            throw new ConversionException(ConversionErrorCode::InvalidInput);
+        }
+
+        if (strlen($this->serializedData) > self::MAX_INPUT_BYTES) {
+            throw new ConversionException(ConversionErrorCode::InputTooLarge);
         }
 
         $unserializeFailed = false;
@@ -96,19 +117,19 @@ class Serialized
                 'max_depth' => 512,
             ]);
         } catch (Throwable) {
-            throw new Exception('Invalid serialized data.');
+            throw new ConversionException(ConversionErrorCode::InvalidInput);
         } finally {
             restore_error_handler();
         }
 
         if ($unserializeFailed || ($decodedData === false && $this->serializedData !== 'b:0;')) {
-            throw new Exception('Invalid serialized data.');
+            throw new ConversionException(ConversionErrorCode::InvalidInput);
         }
 
         $visitedReferences = [];
 
         if ($this->containsObject($decodedData, $visitedReferences)) {
-            throw new Exception('Serialized objects are not supported.');
+            throw new ConversionException(ConversionErrorCode::UnsupportedObject);
         }
 
         $this->decodedData = $decodedData;
