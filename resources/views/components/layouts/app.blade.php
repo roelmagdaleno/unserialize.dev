@@ -36,15 +36,19 @@
 
         @fluxAppearance
     </head>
-    <body class="font-sans antialiased">
-    <main class="container mx-auto p-8 mt-8">
-        <header>
-            <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl dark:text-white">
-                <a href="{{ route('home') }}">Unserialize</a>
-            </h1>
-            <p class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-                Convert your serialized data into a readable format.
-            </p>
+    <body class="min-h-screen bg-white font-sans text-zinc-950 antialiased dark:bg-zinc-900 dark:text-white">
+    <main class="container mx-auto mt-8 p-8">
+        <header class="flex items-start justify-between gap-6">
+            <div>
+                <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl dark:text-white">
+                    <a href="{{ route('home') }}">Unserialize</a>
+                </h1>
+                <p class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
+                    Convert your serialized data into a readable format.
+                </p>
+            </div>
+
+            <flux:switch x-model="$flux.dark" label="Dark mode" />
         </header>
         {{ $slot }}
         <footer>
