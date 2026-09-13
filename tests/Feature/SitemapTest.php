@@ -1,0 +1,26 @@
+<?php
+
+it('lists only canonical public pages in the XML sitemap', function () {
+    $response = $this->get(route('sitemap'));
+
+    $response
+        ->assertHeader('Content-Type', 'application/xml')
+        ->assertSee(route('home'), false)
+        ->assertSee(route('privacy'), false)
+        ->assertSee(route('guides.serialization'), false)
+        ->assertSee(route('security'), false)
+        ->assertSee(route('guides.wordpress'), false)
+        ->assertDontSee('/o/', false)
+        ->assertDontSee('/api/', false)
+        ->assertDontSee('/mcp/', false);
+
+    expect(simplexml_load_string($response->getContent()))->not->toBeFalse();
+});
+
+it('advertises the sitemap without blocking legacy output crawling', function () {
+    $this->get('/robots.txt')
+        ->assertSee('User-agent: *')
+        ->assertSee('Allow: /')
+        ->assertSee('Sitemap: https://unserialize.dev/sitemap.xml')
+        ->assertDontSee('Disallow: /o/');
+});

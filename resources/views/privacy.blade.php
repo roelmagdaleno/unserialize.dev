@@ -1,8 +1,5 @@
-<x-layouts.app
-    title="Privacy and retention | Unserialize"
-    description="How Unserialize processes PHP serialized data, protects submitted values, and handles legacy output links."
->
-    <article class="prose prose-zinc mt-10 max-w-3xl dark:prose-invert">
+<x-layouts.app>
+    <article class="mt-10 max-w-3xl space-y-5 leading-7 text-zinc-700 dark:text-zinc-300">
         <h2>Privacy and retention</h2>
         <p>Last reviewed September 13, 2026.</p>
         <p>New conversions are processed in memory. Your serialized input is transmitted to the Unserialize server, converted, returned to your browser, and not stored in the outputs database.</p>

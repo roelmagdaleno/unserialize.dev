@@ -1,3 +1,4 @@
+<div>
 <section class="mt-8">
     <form wire:submit="unserialize">
         <flux:textarea
@@ -33,3 +34,32 @@
         </section>
     @endif
 </section>
+
+<article class="mt-14 max-w-4xl border-t border-zinc-200 pt-10 dark:border-zinc-700">
+    <h2 class="text-2xl font-semibold tracking-tight">How to convert PHP serialized data</h2>
+    <ol class="mt-4 list-decimal space-y-2 pl-6 text-zinc-700 dark:text-zinc-300">
+        <li>Paste a value produced by PHP's <code>serialize()</code> function into the converter.</li>
+        <li>Select <strong>Unserialize</strong>. The server validates the value with PHP classes disabled.</li>
+        <li>Review or copy the JSON result. The input and result are not retained.</li>
+    </ol>
+
+    <h2 class="mt-10 text-2xl font-semibold tracking-tight">Tested example</h2>
+    <div class="mt-4 grid gap-4 md:grid-cols-2">
+        <div>
+            <h3 class="font-semibold">Serialized PHP</h3>
+            <pre class="mt-2 rounded-lg p-4"><code>a:2:{s:4:"name";s:6:"Chrome";s:6:"active";b:1;}</code></pre>
+        </div>
+        <div>
+            <h3 class="font-semibold">JSON</h3>
+            <pre class="mt-2 rounded-lg p-4"><code>{
+    "name": "Chrome",
+    "active": true
+}</code></pre>
+        </div>
+    </div>
+
+    <h2 class="mt-10 text-2xl font-semibold tracking-tight">Supported PHP values</h2>
+    <p class="mt-3 leading-7 text-zinc-700 dark:text-zinc-300">Null, booleans, integers, floats, strings, indexed arrays, associative arrays, and nested combinations are supported. Objects are rejected, malformed input is refused, recursion is handled safely, and JSON encoding failures are reported without exposing internals.</p>
+    <p class="mt-4 leading-7 text-zinc-700 dark:text-zinc-300">For syntax details and edge cases, read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('guides.serialization') }}">PHP serialization format guide</a>. For untrusted values, review the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('security') }}">security guidance</a> first.</p>
+</article>
+</div>
