@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "roelmagdaleno/unserialize",
     "type": "project",
-    "description": "Convert your serialized data into a readable format.",
+    "description": "Convert PHP serialized data into clean, readable JSON.",
     "keywords": [
         "unserialize",
         "serialized",

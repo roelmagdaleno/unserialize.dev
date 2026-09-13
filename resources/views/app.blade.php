@@ -22,7 +22,7 @@
                     Unserialize
                 </h1>
                 <p class="mt-6 text-lg leading-8 text-gray-600">
-                    Hey there! If you're looking to convert serialized data into a readable format like JSON or an Array, PHP's "unserialize" function can help you out. Give it a try and your data will be in a much more manageable format in no time!
+                    Convert PHP serialized data into clean, readable JSON.
                 </p>
             </header>
         </main>

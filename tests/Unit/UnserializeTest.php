@@ -3,7 +3,7 @@
 use App\Services\Serialized;
 
 it('converts serialized values to JSON', function (string $serializedData, string $expected) {
-    $output = (new Serialized($serializedData, 'json'))->output();
+    $output = (new Serialized($serializedData))->output();
 
     expect($output)->toBe($expected);
 })->with([
@@ -13,22 +13,6 @@ it('converts serialized values to JSON', function (string $serializedData, strin
     'string' => ['s:5:"hello";', '"hello"'],
     'array' => ['a:1:{s:4:"name";s:6:"Chrome";}', "{\n    \"name\": \"Chrome\"\n}"],
 ]);
-
-it('converts serialized values to PHP arrays', function (string $serializedData, string $expected) {
-    $output = (new Serialized($serializedData, 'array'))->output();
-
-    expect($output)->toBe($expected);
-})->with([
-    'integer zero' => ['i:0;', '0'],
-    'false' => ['b:0;', 'false'],
-    'null' => ['N;', 'null'],
-    'string' => ['s:5:"hello";', "'hello'"],
-    'array' => ['a:1:{s:4:"name";s:6:"Chrome";}', "[\n    'name' => 'Chrome'\n]"],
-]);
-
-it('rejects an unsupported output format', function () {
-    (new Serialized('i:0;', 'invalid'))->output();
-})->throws(Exception::class, 'Invalid output format.');
 
 it('rejects invalid serialized data', function (string $serializedData) {
     (new Serialized($serializedData))->output();

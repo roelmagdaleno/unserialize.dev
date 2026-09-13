@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\OutputFormat;
-use Brick\VarExporter\VarExporter;
 use Exception;
 use JsonException;
 use ReflectionReference;
@@ -22,7 +20,6 @@ class Serialized
      */
     public function __construct(
         public string $serializedData,
-        public string $outputFormat = OutputFormat::JSON->value,
     ) {}
 
     /**
@@ -30,17 +27,11 @@ class Serialized
      *
      * @since 1.0.0
      *
-     * @throws Exception If the output format is invalid.
+     * @throws Exception If the serialized data is invalid.
      */
     public function output(): string
     {
-        $method = 'to'.ucfirst($this->outputFormat);
-
-        if (! method_exists($this, $method)) {
-            throw new Exception('Invalid output format.');
-        }
-
-        return $this->$method();
+        return $this->toJson();
     }
 
     /**
@@ -59,18 +50,6 @@ class Serialized
         } catch (JsonException) {
             throw new Exception('Failed to encode the serialized data to JSON.');
         }
-    }
-
-    /**
-     * Transform the serialized data to an array.
-     *
-     * @since 1.0.0
-     *
-     * @throws Exception If the serialized data is invalid.
-     */
-    public function toArray(): string
-    {
-        return VarExporter::export($this->decode());
     }
 
     /**

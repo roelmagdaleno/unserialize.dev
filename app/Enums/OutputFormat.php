@@ -22,13 +22,4 @@ enum OutputFormat: string
             self::ARRAY => 'Array',
         };
     }
-
-    /** @return array<string, string> */
-    public static function toArray(): array
-    {
-        return [
-            self::JSON->value => self::JSON->label(),
-            self::ARRAY->value => self::ARRAY->label(),
-        ];
-    }
 }

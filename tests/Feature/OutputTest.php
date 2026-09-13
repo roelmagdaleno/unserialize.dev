@@ -22,6 +22,17 @@ it('sees the output data on output page', function () {
         ->assertSee($output->created_at);
 });
 
+it('renders legacy array output records', function () {
+    $output = Output::factory()->create([
+        'unserialized' => "[\n    'name' => 'Chrome'\n]",
+        'output_format' => 'array',
+    ]);
+
+    Livewire::test(App\Livewire\Output::class, ['output' => $output])
+        ->assertSee('Output: Array')
+        ->assertSee('Chrome');
+});
+
 it('escapes stored serialized data while rendering highlighted output markup', function () {
     $serializedData = 's:29:"<script>alert(\'xss\')</script>";';
     $output = Output::factory()->create([

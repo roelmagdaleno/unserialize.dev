@@ -10,7 +10,10 @@ beforeEach(function () {
 });
 
 it('renders the converter on the home page', function () {
-    $this->get('/')->assertSeeLivewire(Serialized::class);
+    $this->get('/')
+        ->assertSeeLivewire(Serialized::class)
+        ->assertDontSee('Output Format')
+        ->assertDontSee('value="array"', false);
 });
 
 it('validates required and serialized input with user-visible messages', function (string $serializedData, string $message) {
@@ -43,7 +46,6 @@ it('saves a valid conversion and redirects to its named output route', function 
 
     $component = Livewire::test(Serialized::class)
         ->set('form.serializedData', $serializedData)
-        ->set('form.outputFormat', 'json')
         ->call('unserialize');
     $output = Output::sole();
 

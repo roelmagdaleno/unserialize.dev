@@ -2,14 +2,12 @@
 
 namespace App\Livewire;
 
-use App\Enums\OutputFormat;
 use App\Livewire\Forms\SerializedForm;
 use Exception;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class Serialized extends Component
@@ -22,26 +20,6 @@ class Serialized extends Component
      * @since 1.0.0
      */
     public SerializedForm $form;
-
-    /**
-     * The output formats.
-     *
-     * @since 1.0.0
-     */
-    #[Locked]
-    public array $outputFormats = [];
-
-    /**
-     * Mount the component.
-     *
-     * Set the output formats and more.
-     *
-     * @since 1.0.0
-     */
-    public function mount(): void
-    {
-        $this->outputFormats = OutputFormat::toArray();
-    }
 
     /**
      * Start the unserialize process.

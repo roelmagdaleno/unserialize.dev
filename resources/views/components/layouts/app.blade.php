@@ -4,16 +4,16 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <title>{{ $title ?? 'Unserialize - Convert your serialized data into a readable format' }}</title>
+        <title>{{ $title ?? 'Unserialize - Convert PHP serialized data to JSON' }}</title>
 
         <!-- Meta Tags -->
-        <meta name="description" content="Unserialize your PHP serialized data into a readable format like JSON or an Array quickly and easily with the PHP unserialize function.">
-        <meta property="og:title" content="Unserialize - Convert your serialized data into a readable format">
-        <meta property="og:description" content="Unserialize your PHP serialized data into a readable format like JSON or an Array quickly and easily with the PHP unserialize function.">
+        <meta name="description" content="Convert PHP serialized data into clean, readable JSON quickly and easily.">
+        <meta property="og:title" content="Unserialize - Convert PHP serialized data to JSON">
+        <meta property="og:description" content="Convert PHP serialized data into clean, readable JSON quickly and easily.">
         <meta property="og:type" content="website">
         <meta property="og:url" content="https://unserialize.dev">
-        <meta property="twitter:title" content="Unserialize - Convert serialized data into a readable format">
-        <meta property="twitter:description" content="Unserialize your PHP serialized data into a readable format like JSON or an Array quickly and easily with the PHP unserialize function.">
+        <meta property="twitter:title" content="Unserialize - Convert PHP serialized data to JSON">
+        <meta property="twitter:description" content="Convert PHP serialized data into clean, readable JSON quickly and easily.">
         <meta property="twitter:card" content="summary_large_image">
         <meta property="twitter:url" content="https://unserialize.dev">
         <meta property="twitter:image" content="https://unserialize.dev/images/social.png">
@@ -44,7 +44,7 @@
                     <a href="{{ route('home') }}">Unserialize</a>
                 </h1>
                 <p class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-                    Convert your serialized data into a readable format.
+                    Convert PHP serialized data into clean, readable JSON.
                 </p>
             </div>
 
