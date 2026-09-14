@@ -52,3 +52,11 @@ it('publishes developer instructions for both stateless interfaces', function ()
         ->assertSee(route('openapi'))
         ->assertSee(route('privacy'));
 });
+
+it('highlights the developer guide code blocks with Shiki', function () {
+    $this->get(route('developers'))
+        ->assertOk()
+        ->assertSee('resources/js/highlight.js')
+        ->assertSee('data-lang="bash"', false)
+        ->assertSee('data-lang="json"', false);
+});

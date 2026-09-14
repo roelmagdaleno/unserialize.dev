@@ -12,6 +12,7 @@ const themes = {
 
 // Grammars are split out so a page only downloads the languages it renders.
 const languageLoaders = {
+    bash: () => import('shiki/langs/bash.mjs'),
     json: () => import('shiki/langs/json.mjs'),
     php: () => import('shiki/langs/php.mjs'),
 };

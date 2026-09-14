@@ -85,6 +85,8 @@
 
         @if(Route::is('home', 'outputs'))
             @vite(['resources/css/code.css', 'resources/js/clipboard.js', 'resources/js/highlight.js'])
+        @elseif(Route::is('developers'))
+            @vite(['resources/css/code.css', 'resources/js/highlight.js'])
         @endif
 
         @fluxAppearance
