@@ -12,7 +12,12 @@ html.dark {
     --code-text: #cdd6f4;
 }
 
-pre, code {
+/*
+ * Inline code only: prose paragraphs, list items, and table cells. Code blocks
+ * are styled by the `pre` rule below so the converted output never picks up the
+ * inline chip padding or border.
+ */
+p code, li code, td code {
     border-style: var(--tw-border-style);
     border-width: 1px;
     border-color: var(--code-border);
@@ -24,6 +29,14 @@ pre, code {
     line-height: var(--tw-leading, var(--text-sm--line-height));
     color: var(--code-text);
     border-radius: .25rem;
+}
+
+pre {
+    background-color: var(--code-bg);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    color: var(--code-text);
 }
 
 /*
