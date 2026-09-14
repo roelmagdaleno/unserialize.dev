@@ -18,6 +18,11 @@ Route::get('/sitemap.xml', function () {
 Route::get('/robots.txt', fn () => response("User-agent: *\nAllow: /\n\nSitemap: https://unserialize.dev/sitemap.xml\n", 200, [
     'Content-Type' => 'text/plain',
 ]));
+Route::get('/openapi.json', fn () => response(
+    file_get_contents(public_path('openapi.json')),
+    200,
+    ['Content-Type' => 'application/json'],
+))->name('openapi');
 Route::get('/o', fn () => redirect('/'));
 Route::get('/o/{output}', Output::class)
     ->middleware(AddLegacyOutputNoIndexHeader::class)

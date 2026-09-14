@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        RateLimiter::for('unserialize-api', function (Request $request) {
+            return Limit::perMinute(10)
+                ->by(hash('sha256', $request->ip()))
+                ->response(fn (Request $request, array $headers) => response()->json([
+                    'error' => [
+                        'code' => 'rate_limited',
+                        'message' => 'Too many conversion attempts. Try again later.',
+                    ],
+                ], 429, $headers));
+        });
     }
 }

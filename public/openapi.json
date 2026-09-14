@@ -1,0 +1,173 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Unserialize API",
+    "version": "1.0.0",
+    "description": "Stateless conversion of supported PHP serialized values to JSON. Request and response bodies are not retained.",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    }
+  },
+  "servers": [
+    { "url": "https://unserialize.dev" }
+  ],
+  "paths": {
+    "/api/v1/unserialize": {
+      "post": {
+        "operationId": "convertSerializedPhpToJson",
+        "security": [],
+        "summary": "Convert PHP serialized data to JSON",
+        "description": "Accepts one PHP serialized value of at most 262,144 bytes. The operation is stateless, side-effect free, and safe to retry.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ConversionRequest" },
+              "examples": {
+                "associativeArray": {
+                  "value": { "serialized": "a:1:{s:4:\"name\";s:6:\"Chrome\";}" }
+                },
+                "scalar": {
+                  "value": { "serialized": "i:42;" }
+                },
+                "null": {
+                  "value": { "serialized": "N;" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversion completed without retention.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConversionResponse" },
+                "example": {
+                  "data": { "value": { "name": "Chrome" }, "format": "json" },
+                  "meta": { "retained": false }
+                }
+              }
+            }
+          },
+          "413": { "$ref": "#/components/responses/InputTooLarge" },
+          "415": { "$ref": "#/components/responses/UnsupportedMediaType" },
+          "422": { "$ref": "#/components/responses/UnprocessableInput" },
+          "429": {
+            "description": "Per-client conversion limit exceeded.",
+            "headers": {
+              "Retry-After": {
+                "required": true,
+                "description": "Seconds until another request may be attempted.",
+                "schema": { "type": "integer", "minimum": 1 }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": { "error": { "code": "rate_limited", "message": "Too many conversion attempts. Try again later." } }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConversionRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["serialized"],
+        "properties": {
+          "serialized": {
+            "type": "string",
+            "minLength": 1,
+            "x-maxBytes": 262144,
+            "description": "A PHP serialized value, limited to 262,144 UTF-8 bytes."
+          }
+        }
+      },
+      "ConversionResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["data", "meta"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["value", "format"],
+            "properties": {
+              "value": {
+                "description": "The decoded value represented directly as JSON.",
+                "type": ["object", "array", "string", "number", "boolean", "null"]
+              },
+              "format": { "const": "json" }
+            }
+          },
+          "meta": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["retained"],
+            "properties": { "retained": { "const": false } }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": ["validation_error", "invalid_input", "unsupported_object", "input_too_large", "encoding_failed", "unsupported_media_type", "rate_limited"]
+          },
+          "message": { "type": "string" },
+          "details": {
+            "type": "object",
+            "additionalProperties": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["error"],
+        "properties": { "error": { "$ref": "#/components/schemas/Error" } }
+      }
+    },
+    "responses": {
+      "InputTooLarge": {
+        "description": "The serialized value exceeds 262,144 bytes.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "error": { "code": "input_too_large", "message": "The serialized data must not be greater than 262,144 bytes." } }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "The request is not JSON.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "example": { "error": { "code": "unsupported_media_type", "message": "Content-Type must be application/json." } }
+          }
+        }
+      },
+      "UnprocessableInput": {
+        "description": "Validation, decoding, object-safety, or encoding failure.",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+            "examples": {
+              "invalid": { "value": { "error": { "code": "invalid_input", "message": "Invalid serialized data." } } },
+              "object": { "value": { "error": { "code": "unsupported_object", "message": "Serialized objects are not supported." } } }
+            }
+          }
+        }
+      }
+    }
+  }
+}
