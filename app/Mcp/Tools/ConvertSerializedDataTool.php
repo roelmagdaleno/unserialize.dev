@@ -3,7 +3,9 @@
 namespace App\Mcp\Tools;
 
 use App\Enums\ConversionErrorCode;
+use App\Enums\ConversionInterface;
 use App\Exceptions\ConversionException;
+use App\Services\ConversionTelemetry;
 use App\Services\Serialized;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -40,19 +42,27 @@ class ConvertSerializedDataTool extends Tool
         return $tool;
     }
 
-    public function handle(Request $request): ResponseFactory
+    public function handle(Request $request, ConversionTelemetry $telemetry): ResponseFactory
     {
+        $startedAt = hrtime(true);
         $arguments = $request->all();
+        $inputBytes = is_string($arguments['serialized'] ?? null) ? strlen($arguments['serialized']) : 0;
 
         if (array_keys($arguments) !== ['serialized'] || ! is_string($arguments['serialized'])) {
+            $telemetry->record(ConversionInterface::Mcp, 'validation_error', $inputBytes, $startedAt);
+
             return $this->error('validation_error', 'Provide exactly one string field named serialized.');
         }
 
         try {
             $result = (new Serialized($arguments['serialized']))->convert();
         } catch (ConversionException $exception) {
+            $telemetry->record(ConversionInterface::Mcp, $exception->errorCode->value, $inputBytes, $startedAt);
+
             return $this->error($exception->errorCode->value, $exception->getMessage());
         }
+
+        $telemetry->record(ConversionInterface::Mcp, 'success', $inputBytes, $startedAt);
 
         return Response::structured([
             'data' => [

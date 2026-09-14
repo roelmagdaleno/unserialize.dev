@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Enums\ConversionInterface;
+use App\Services\ConversionTelemetry;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,6 +11,8 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class UnserializeRequest extends FormRequest
 {
+    private int $telemetryStartedAt;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -48,6 +52,13 @@ class UnserializeRequest extends FormRequest
      */
     protected function failedValidation(Validator $validator): void
     {
+        app(ConversionTelemetry::class)->record(
+            ConversionInterface::Api,
+            'validation_error',
+            strlen((string) $this->input('serialized', '')),
+            $this->telemetryStartedAt,
+        );
+
         throw new HttpResponseException(response()->json([
             'error' => [
                 'code' => 'validation_error',
@@ -55,5 +66,10 @@ class UnserializeRequest extends FormRequest
                 'details' => $validator->errors()->toArray(),
             ],
         ], 422));
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->telemetryStartedAt = hrtime(true);
     }
 }
