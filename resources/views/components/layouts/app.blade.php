@@ -11,21 +11,6 @@
             'description' => 'Learn how Unserialize processes PHP serialized data, protects submitted values, and handles legacy output links.',
             'canonical' => route('privacy'),
         ],
-        'guides.serialization' => [
-            'title' => 'PHP Serialization Format Guide | Unserialize',
-            'description' => 'A tested reference for PHP serialized syntax and its mapping to JSON values.',
-            'canonical' => route('guides.serialization'),
-        ],
-        'security' => [
-            'title' => 'PHP Unserialize Security Guide | Unserialize',
-            'description' => 'Safely inspect untrusted PHP serialized data with object rejection, size limits, and private processing.',
-            'canonical' => route('security'),
-        ],
-        'guides.wordpress' => [
-            'title' => 'WordPress Serialized Data Guide | Unserialize',
-            'description' => 'A practical, cautious workflow for inspecting serialized WordPress options and metadata.',
-            'canonical' => route('guides.wordpress'),
-        ],
         'developers' => [
             'title' => 'API and MCP Developer Guide | Unserialize',
             'description' => 'Integrate the stateless PHP serialized-data converter through its versioned JSON API or read-only MCP tool.',
@@ -131,19 +116,12 @@
                 </flux:menu>
             </flux:dropdown>
         </header>
-        <nav aria-label="Primary" class="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
-            <a href="{{ route('home') }}" class="text-blue-900 hover:underline dark:text-blue-300">Converter</a>
-            <a href="{{ route('guides.serialization') }}" class="text-blue-900 hover:underline dark:text-blue-300">Format guide</a>
-            <a href="{{ route('guides.wordpress') }}" class="text-blue-900 hover:underline dark:text-blue-300">WordPress</a>
-            <a href="{{ route('security') }}" class="text-blue-900 hover:underline dark:text-blue-300">Security</a>
-            <a href="{{ route('privacy') }}" class="text-blue-900 hover:underline dark:text-blue-300">Privacy</a>
-            <a href="{{ route('developers') }}" class="text-blue-900 hover:underline dark:text-blue-300">Developers</a>
-        </nav>
         {{ $slot }}
         <footer>
             <p class="mt-8 text-sm text-gray-700 dark:text-gray-300">
                 Built with ❤️ by <a href="https://github.com/roelmagdaleno" class="text-blue-900 dark:text-blue-300">Roel</a>.
                 Source on <a href="https://github.com/roelmagdaleno/unserialize" class="text-blue-900 dark:text-blue-300">GitHub</a>.
+                <a href="{{ route('privacy') }}" class="text-blue-900 dark:text-blue-300">Privacy</a>.
                 <a href="{{ route('developers') }}" class="text-blue-900 dark:text-blue-300">API and MCP documentation</a>.
             </p>
         </footer>

@@ -31,7 +31,7 @@
 
         <section class="space-y-3" aria-labelledby="privacy-security">
             <h3 id="privacy-security" class="text-xl font-semibold text-zinc-950 dark:text-white">Privacy and safe use</h3>
-            <p>Requests are processed in memory. Operational telemetry records only interface, outcome, latency, and an input-size bucket—not request bodies, converted values, or public output URLs. Redact secrets before sending data and review the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('privacy') }}">privacy contract</a> and <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('security') }}">security guidance</a>.</p>
+            <p>Requests are processed in memory. Operational telemetry records only interface, outcome, latency, and an input-size bucket—not request bodies, converted values, or public output URLs. Redact secrets before sending data and review the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('privacy') }}">privacy contract</a> and <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('home') }}#security">security guidance</a>.</p>
         </section>
     </article>
 </x-layouts.app>

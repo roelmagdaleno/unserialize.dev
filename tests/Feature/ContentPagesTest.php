@@ -2,42 +2,35 @@
 
 use App\Services\Serialized;
 
-it('publishes a complete converter reference on the home page', function () {
+it('publishes the complete converter guide on the home page', function () {
     $this->get(route('home'))
         ->assertSee('How to convert PHP serialized data')
-        ->assertSee('Supported PHP values')
-        ->assertSee('Objects are rejected')
+        ->assertSee('PHP serialization format')
+        ->assertSee('Why I built Unserialize')
+        ->assertSee('Working with WordPress serialized data')
+        ->assertSee('Security and privacy')
+        ->assertSee('allowed_classes')
+        ->assertSee('Back up the database before making changes')
+        ->assertSee('https://www.php.net/manual/en/function.serialize.php', false)
         ->assertSee('a:2:{s:4:"name";s:6:"Chrome";s:6:"active";b:1;}', false)
         ->assertSee('"active": true', false);
 });
 
-it('publishes tested PHP serialization mappings', function () {
-    $this->get(route('guides.serialization'))
-        ->assertSee('PHP serialization format and JSON mapping')
-        ->assertSee('Indexed arrays become JSON arrays')
-        ->assertSee('Associative arrays become JSON objects')
-        ->assertSee('Serialized objects are not supported')
-        ->assertSee('https://www.php.net/manual/en/function.serialize.php', false)
-        ->assertSee(route('security'))
-        ->assertSee('https://github.com/roelmagdaleno/unserialize', false);
-});
+it('redirects retired guide pages to their home page sections', function (string $routeName, string $section) {
+    $this->get(route($routeName))
+        ->assertMovedPermanently()
+        ->assertRedirect('/#'.$section);
+})->with([
+    'serialization guide' => ['guides.serialization', 'format'],
+    'WordPress guide' => ['guides.wordpress', 'wordpress'],
+    'security guide' => ['security', 'security'],
+]);
 
-it('publishes security guidance with implementation-backed safeguards', function () {
-    $this->get(route('security'))
-        ->assertSee('Treat serialized data as untrusted input')
-        ->assertSee('allowed_classes')
-        ->assertSee('262,144 bytes')
-        ->assertSee('https://www.php.net/manual/en/function.unserialize.php', false)
-        ->assertSee('Report a security issue');
-});
-
-it('publishes a safe WordPress inspection workflow', function () {
-    $this->get(route('guides.wordpress'))
-        ->assertSee('Inspect WordPress options and metadata safely')
-        ->assertSee('Back up the database before making changes')
-        ->assertSee('Redact secrets')
-        ->assertSee('wp option get')
-        ->assertSee('a:2:{s:10:"show_title";b:1;s:14:"posts_per_page";i:10;}', false);
+it('does not link to retired guide pages from the home page', function () {
+    $this->get(route('home'))
+        ->assertDontSee(route('guides.serialization'), false)
+        ->assertDontSee(route('guides.wordpress'), false)
+        ->assertDontSee(route('security'), false);
 });
 
 it('keeps published examples aligned with the conversion service', function (string $serializedData, mixed $expectedValue) {
