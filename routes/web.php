@@ -7,9 +7,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', Serialized::class)->name('home');
 Route::view('/privacy', 'privacy')->name('privacy');
-Route::permanentRedirect('/guides/php-serialization', '/#format')->name('guides.serialization');
-Route::permanentRedirect('/guides/wordpress', '/#wordpress')->name('guides.wordpress');
-Route::permanentRedirect('/security', '/#security')->name('security');
 Route::view('/developers', 'developers')->name('developers');
 Route::get('/sitemap.xml', function () {
     return response()
