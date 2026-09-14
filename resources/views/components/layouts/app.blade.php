@@ -1,83 +1,11 @@
-@php
-    $routeName = Route::currentRouteName();
-    $metadata = match ($routeName) {
-        'home' => [
-            'title' => 'PHP Unserialize to JSON Converter | Unserialize',
-            'description' => 'Convert PHP serialized data to readable JSON without storing your input. Includes tested mappings, limits, and object-safety guidance.',
-            'canonical' => route('home'),
-        ],
-        'privacy' => [
-            'title' => 'Privacy and Retention | Unserialize',
-            'description' => 'Learn how Unserialize processes PHP serialized data, protects submitted values, and handles legacy output links.',
-            'canonical' => route('privacy'),
-        ],
-        'developers' => [
-            'title' => 'API and MCP Developer Guide | Unserialize',
-            'description' => 'Integrate the stateless PHP serialized-data converter through its versioned JSON API or read-only MCP tool.',
-            'canonical' => route('developers'),
-        ],
-        'outputs' => [
-            'title' => 'Legacy conversion output | Unserialize',
-            'description' => 'A private legacy conversion output.',
-            'canonical' => null,
-        ],
-        default => [
-            'title' => 'Unserialize',
-            'description' => 'Convert PHP serialized data to readable JSON.',
-            'canonical' => null,
-        ],
-    };
-@endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <title>{{ $metadata['title'] }}</title>
-
-        @if(Route::is('outputs'))
-            <meta name="robots" content="noindex, nofollow, noarchive">
-        @endif
-
-        <meta name="description" content="{{ $metadata['description'] }}">
-        <meta property="og:title" content="{{ $metadata['title'] }}">
-        <meta property="og:description" content="{{ $metadata['description'] }}">
-        <meta property="og:type" content="website">
-        @if ($metadata['canonical'] !== null)
-            <link rel="canonical" href="{{ $metadata['canonical'] }}">
-            <meta property="og:url" content="{{ $metadata['canonical'] }}">
-            <meta property="twitter:url" content="{{ $metadata['canonical'] }}">
-        @endif
-        <meta property="twitter:title" content="{{ $metadata['title'] }}">
-        <meta property="twitter:description" content="{{ $metadata['description'] }}">
-        <meta property="twitter:card" content="summary_large_image">
-        <meta property="twitter:image" content="{{ asset('images/social.png') }}">
-        <meta property="twitter:site" content="@roelmagdaleno">
-        <meta property="twitter:creator" content="@roelmagdaleno">
-
-        @if ($routeName === 'home')
-            <script type="application/ld+json">{!! json_encode([
-                '@context' => 'https://schema.org',
-                '@type' => 'WebApplication',
-                'name' => 'Unserialize',
-                'url' => route('home'),
-                'applicationCategory' => 'DeveloperApplication',
-                'operatingSystem' => 'Any operating system with a modern web browser',
-                'description' => $metadata['description'],
-                'offers' => [
-                    '@type' => 'Offer',
-                    'price' => 0,
-                    'priceCurrency' => 'USD',
-                ],
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
-        @endif
-
-        <link rel="preconnect" href="https://www.googletagmanager.com">
-        <link rel="preconnect" href="https://www.google-analytics.com">
+        @head
 
         <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=geist-mono:400,500|inter:400,500,600&display=swap" rel="stylesheet" />
 
         <!-- Styles / Scripts -->

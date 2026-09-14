@@ -8,6 +8,11 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Head\Enums\ImageType;
+use Laravel\Head\Enums\OgType;
+use Laravel\Head\Enums\TwitterCard;
+use Laravel\Head\Facades\Head;
+use Laravel\Head\HeadBuilder;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Laravel\Nightwatch\Records\Request as NightwatchRequest;
 
@@ -26,6 +31,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->registerHeadDefaults();
+
         RateLimiter::for('unserialize-api', function (Request $request) {
             return Limit::perMinute(10)
                 ->by(hash('sha256', $request->ip()))
@@ -71,5 +78,28 @@ class AppServiceProvider extends ServiceProvider
 
             return true;
         });
+    }
+
+    /**
+     * Register the site-wide document head metadata.
+     *
+     * Pages layer their own title, description, canonical URL, and robots
+     * directives on top of these defaults through their route metadata.
+     */
+    private function registerHeadDefaults(): void
+    {
+        Head::defaults(fn (HeadBuilder $head) => $head
+            ->title('Unserialize', suffix: ' | Unserialize')
+            ->description('Convert PHP serialized data to readable JSON.')
+            ->applicationName('Unserialize')
+            ->viewport('width=device-width, initial-scale=1.0')
+            ->colorScheme('light dark')
+            ->searchableByRobots()
+            ->og(type: OgType::Website, siteName: 'Unserialize')
+            ->ogImage(asset('images/social.png'), alt: 'Unserialize', width: 2400, height: 1200, type: ImageType::Png)
+            ->twitter(card: TwitterCard::SummaryWithLargeImage, site: '@roelmagdaleno', creator: '@roelmagdaleno')
+            ->preconnect('https://www.googletagmanager.com')
+            ->preconnect('https://www.google-analytics.com')
+            ->preconnect('https://fonts.bunny.net'));
     }
 }

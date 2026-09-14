@@ -20,6 +20,7 @@
         "php": "^8.4",
         "brick/varexporter": "^0.5.0",
         "laravel/framework": "^13.0",
+        "laravel/head": "^0.2.2",
         "laravel/mcp": "^0.9",
         "laravel/nightwatch": "^1.14",
         "laravel/tinker": "^3.0",

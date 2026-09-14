@@ -11,11 +11,21 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
+use Laravel\Head\Facades\Head;
+use Laravel\Head\Facades\Schema;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class Serialized extends Component
 {
+    /**
+     * The home page meta description, shared with the route metadata and the
+     * structured data so both describe the converter the same way.
+     *
+     * @since 1.0.0
+     */
+    public const string META_DESCRIPTION = 'Convert PHP serialized data to readable JSON without storing your input. Includes tested mappings, limits, and object-safety guidance.';
+
     private const int MAX_ATTEMPTS = 10;
 
     /**
@@ -55,6 +65,31 @@ class Serialized extends Component
      */
     #[Locked]
     public ?array $diagnostic = null;
+
+    /**
+     * Mount the component.
+     *
+     * Publish the converter's structured data alongside the head metadata the
+     * home route already declares.
+     *
+     * @since 1.0.0
+     */
+    public function mount(): void
+    {
+        Head::schema(
+            Schema::webApplication()
+                ->name('Unserialize')
+                ->url(url('/').'/')
+                ->description(self::META_DESCRIPTION)
+                ->applicationCategory('DeveloperApplication')
+                ->operatingSystem('Any operating system with a modern web browser')
+                ->offers(
+                    Schema::offer()
+                        ->price(0)
+                        ->currency('USD')
+                )
+        );
+    }
 
     /**
      * Start the unserialize process.
