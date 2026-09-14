@@ -58,7 +58,12 @@ class ValidateMcpRequestOrigin
     {
         $parts = parse_url($url);
 
-        if (! is_array($parts) || ! isset($parts['scheme'], $parts['host'])) {
+        if (
+            ! is_array($parts)
+            || ! isset($parts['scheme'], $parts['host'])
+            || isset($parts['user'], $parts['pass'], $parts['query'], $parts['fragment'])
+            || (isset($parts['path']) && ! in_array($parts['path'], ['', '/'], true))
+        ) {
             return null;
         }
 
