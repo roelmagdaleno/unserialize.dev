@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Data\ConversionResult;
+use App\Data\EngineOutcome;
 use App\Enums\ConversionErrorCode;
+use App\Enums\EngineFailureKind;
 use App\Exceptions\ConversionException;
 use JsonException;
 use ReflectionReference;
@@ -12,6 +14,8 @@ use Throwable;
 class Serialized
 {
     public const int MAX_INPUT_BYTES = 262144;
+
+    public const int MAX_DEPTH = 512;
 
     private bool $hasDecoded = false;
 
@@ -24,7 +28,16 @@ class Serialized
      */
     public function __construct(
         public string $serializedData,
+        private ?SerializedDiagnostics $diagnostics = null,
     ) {}
+
+    /**
+     * The diagnostics service, built on demand so conversion never pays for it.
+     */
+    private function diagnostics(): SerializedDiagnostics
+    {
+        return $this->diagnostics ??= new SerializedDiagnostics(new SerializedScanner);
+    }
 
     /**
      * Output the serialized data.
@@ -88,7 +101,7 @@ class Serialized
     /**
      * Safely decode the serialized value once.
      *
-     * @throws Exception If the serialized data is invalid or contains an object.
+     * @throws ConversionException If the serialized data cannot be converted.
      */
     private function decode(): mixed
     {
@@ -96,17 +109,21 @@ class Serialized
             return $this->decodedData;
         }
 
-        if ($this->serializedData === '') {
-            throw new ConversionException(ConversionErrorCode::InvalidInput);
-        }
-
         if (strlen($this->serializedData) > self::MAX_INPUT_BYTES) {
             throw new ConversionException(ConversionErrorCode::InputTooLarge);
         }
 
-        $unserializeFailed = false;
-        set_error_handler(static function () use (&$unserializeFailed): bool {
-            $unserializeFailed = true;
+        /**
+         * Every diagnostic is collected rather than collapsed into a boolean:
+         * PHP raises benign notices for payloads it decodes perfectly well, and
+         * it reports unrelated conditions through one shared warning. Only
+         * {@see EngineOutcome} is allowed to decide which of them is a failure.
+         */
+        $warnings = [];
+        $threw = false;
+
+        set_error_handler(static function (int $number, string $message) use (&$warnings): bool {
+            $warnings[] = $message;
 
             return true;
         });
@@ -114,16 +131,35 @@ class Serialized
         try {
             $decodedData = unserialize($this->serializedData, [
                 'allowed_classes' => false,
-                'max_depth' => 512,
+                'max_depth' => self::MAX_DEPTH,
             ]);
         } catch (Throwable) {
-            throw new ConversionException(ConversionErrorCode::InvalidInput);
+            $threw = true;
+            $decodedData = false;
         } finally {
             restore_error_handler();
         }
 
-        if ($unserializeFailed || ($decodedData === false && $this->serializedData !== 'b:0;')) {
-            throw new ConversionException(ConversionErrorCode::InvalidInput);
+        $engine = $threw
+            ? new EngineOutcome(EngineFailureKind::Opaque)
+            : EngineOutcome::fromWarnings($warnings, $decodedData, $this->serializedData);
+
+        if ($engine->kind === EngineFailureKind::ObjectUnserializer) {
+            throw new ConversionException(ConversionErrorCode::UnsupportedObject);
+        }
+
+        if ($engine->kind === EngineFailureKind::DepthExceeded) {
+            throw new ConversionException(
+                ConversionErrorCode::DepthLimitExceeded,
+                $this->diagnostics()->diagnose($this->serializedData, $engine),
+            );
+        }
+
+        if ($engine->failed()) {
+            throw new ConversionException(
+                ConversionErrorCode::InvalidInput,
+                $this->diagnostics()->diagnose($this->serializedData, $engine),
+            );
         }
 
         $visitedReferences = [];
