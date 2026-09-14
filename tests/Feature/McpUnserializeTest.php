@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Middleware\ValidateMcpRequestOrigin;
 use App\Mcp\Servers\UnserializeServer;
 use App\Mcp\Tools\ConvertSerializedDataTool;
 use App\Models\Output;
 use App\Services\Serialized;
+use Illuminate\Http\Request;
 use Laravel\Mcp\Facades\Mcp;
 
 test('the mcp tool converts serialized input without persistence', function () {
@@ -71,6 +73,45 @@ test('the anonymous mcp transport is separately rate limited', function () {
 
     expect($route)->not->toBeNull()
         ->and($route->middleware())->toContain('throttle:unserialize-mcp');
+});
+
+test('the mcp transport rejects a forged host', function () {
+    $response = app(ValidateMcpRequestOrigin::class)->handle(
+        Request::create('http://attacker.example/mcp/unserialize', 'POST'),
+        fn () => response('', 200),
+    );
+
+    expect($response->getStatusCode())->toBe(403)
+        ->and($response->getContent())->toContain('Forbidden origin or host.');
+});
+
+test('the mcp transport rejects a cross-origin request', function () {
+    $this->withHeader('Origin', 'https://attacker.example')->postJson('/mcp/unserialize', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'initialize',
+        'params' => [
+            'protocolVersion' => '2025-11-25',
+            'capabilities' => [],
+            'clientInfo' => ['name' => 'test-client', 'version' => '1.0.0'],
+        ],
+    ])->assertForbidden()
+        ->assertJsonPath('error.code', -32000)
+        ->assertJsonPath('error.message', 'Forbidden origin or host.');
+});
+
+test('the mcp transport accepts the configured origin', function () {
+    $this->withHeader('Origin', config('app.url'))->postJson('/mcp/unserialize', [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'initialize',
+        'params' => [
+            'protocolVersion' => '2025-11-25',
+            'capabilities' => [],
+            'clientInfo' => ['name' => 'test-client', 'version' => '1.0.0'],
+        ],
+    ])->assertOk()
+        ->assertJsonPath('result.serverInfo.name', 'Unserialize Server');
 });
 
 test('rate limiting is isolated from the sqlite application database', function () {
