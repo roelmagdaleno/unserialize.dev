@@ -121,14 +121,14 @@
             <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
                     <h4 class="font-semibold text-zinc-950 dark:text-white">Serialized PHP</h4>
-                    <pre class="mt-2 rounded-lg p-4"><code>a:2:{s:4:"name";s:6:"Chrome";s:6:"active";b:1;}</code></pre>
+                    <pre class="mt-2 overflow-x-auto rounded-lg p-4" data-lang="text">a:2:{s:4:"name";s:6:"Chrome";s:6:"active";b:1;}</pre>
                 </div>
                 <div>
                     <h4 class="font-semibold text-zinc-950 dark:text-white">JSON</h4>
-                    <pre class="mt-2 rounded-lg p-4"><code>{
+                    <pre class="mt-2 overflow-x-auto rounded-lg p-4" data-lang="json">{
     "name": "Chrome",
     "active": true
-}</code></pre>
+}</pre>
                 </div>
             </div>
 

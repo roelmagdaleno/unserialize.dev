@@ -55,7 +55,7 @@ p code, li code, td code {
 pre {
     background-color: var(--code-bg);
     font-family: var(--font-mono);
-    font-size: var(--text-sm);
+    font-size: var(--text-base);
     line-height: var(--tw-leading, var(--text-sm--line-height));
     color: var(--code-text);
 }
