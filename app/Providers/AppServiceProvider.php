@@ -32,5 +32,8 @@ class AppServiceProvider extends ServiceProvider
                     ],
                 ], 429, $headers));
         });
+
+        RateLimiter::for('unserialize-mcp', fn (Request $request): Limit => Limit::perMinute(10)
+            ->by(hash('sha256', $request->ip())));
     }
 }
