@@ -3,6 +3,11 @@
     --code-bg: #eff1f5;
     --code-border: #ccd0da;
     --code-text: #4c4f69;
+
+    /* Inline code chips: softer than the code block palette. */
+    --inline-code-bg: #f1f2f4;
+    --inline-code-border: #e3e5e9;
+    --inline-code-text: #323a45;
 }
 
 html.dark {
@@ -10,6 +15,10 @@ html.dark {
     --code-bg: #1e1e2e;
     --code-border: #313244;
     --code-text: #cdd6f4;
+
+    --inline-code-bg: #262638;
+    --inline-code-border: #313244;
+    --inline-code-text: #dfe4f2;
 }
 
 /*
@@ -20,15 +29,15 @@ html.dark {
 p code, li code, td code {
     border-style: var(--tw-border-style);
     border-width: 1px;
-    border-color: var(--code-border);
-    background-color: var(--code-bg);
+    border-color: var(--inline-code-border);
+    background-color: var(--inline-code-bg);
     padding-inline: calc(var(--spacing) * 1.5);
     padding-block: calc(var(--spacing) * .5);
     font-family: var(--font-mono);
     font-size: var(--text-sm);
     line-height: var(--tw-leading, var(--text-sm--line-height));
-    color: var(--code-text);
-    border-radius: .25rem;
+    color: var(--inline-code-text);
+    border-radius: .375rem;
 }
 
 pre {
