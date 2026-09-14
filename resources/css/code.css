@@ -30,10 +30,17 @@ html.dark {
 
 /* Apply the variables */
 pre, code {
-    color: var(--code-text);
-    background-color: var(--code-bg);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: var(--color-gray-200);
+    background-color: var(--color-gray-100);
+    padding-inline: calc(var(--spacing) * 1.5);
+    padding-block: calc(var(--spacing) * .5);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+    color: var(--color-gray-800);
+    border-radius: .25rem;
 }
 
 .hl-keyword {
