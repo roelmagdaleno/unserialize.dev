@@ -5,4 +5,16 @@
 
 @theme {
     --font-sans: Inter, sans-serif;
+    --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/*
+ * Tailwind Preflight leaves `code`, `pre`, `kbd`, and `samp` on the browser's
+ * default monospace stack. Point them at the theme font so code renders in
+ * Geist Mono everywhere, including pages that do not load `code.css`.
+ */
+@layer base {
+    code, kbd, samp, pre {
+        font-family: var(--font-mono);
+    }
 }
