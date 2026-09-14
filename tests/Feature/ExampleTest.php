@@ -3,7 +3,7 @@
 it('renders the application title', function () {
     $this->get('/')
         ->assertOk()
-        ->assertSee('<title>Unserialize - Convert your serialized data into a readable format</title>', false);
+        ->assertSee('<title>PHP Unserialize to JSON Converter | Unserialize</title>', false);
 });
 
 it('renders an appearance dropdown with light, dark, and system options', function () {
