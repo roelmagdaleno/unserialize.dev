@@ -42,7 +42,7 @@ it('renders legacy array output records', function () {
         ->assertSee('Chrome');
 });
 
-it('escapes stored serialized data while rendering highlighted output markup', function () {
+it('escapes stored data while rendering the output markup', function () {
     $serializedData = 's:29:"<script>alert(\'xss\')</script>";';
     $output = Output::factory()->create([
         'serialized' => $serializedData,
@@ -54,5 +54,6 @@ it('escapes stored serialized data while rendering highlighted output markup', f
     $response
         ->assertSee($serializedData)
         ->assertDontSee($serializedData, false)
-        ->assertSee($output->syntax_highlighted, false);
+        ->assertSee($output->unserialized)
+        ->assertDontSee($output->unserialized, false);
 });

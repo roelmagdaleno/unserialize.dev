@@ -84,7 +84,7 @@
         @vite(['resources/css/app.css'])
 
         @if(Route::is('home', 'outputs'))
-            @vite(['resources/css/code.css', 'resources/js/clipboard.js'])
+            @vite(['resources/css/code.css', 'resources/js/clipboard.js', 'resources/js/highlight.js'])
         @endif
 
         @fluxAppearance

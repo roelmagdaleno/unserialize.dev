@@ -3,11 +3,9 @@
 namespace App\Models;
 
 use App\Enums\OutputFormat;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Tempest\Highlight\Highlighter;
 
 class Output extends Model
 {
@@ -27,17 +25,5 @@ class Output extends Model
         return [
             'output_format' => OutputFormat::class,
         ];
-    }
-
-    /**
-     * Get the syntax highlighted attribute.
-     *
-     * @since 1.0.0
-     */
-    protected function syntaxHighlighted(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => (new Highlighter)->parse($this->unserialized, $this->output_format->syntaxLanguage()),
-        );
     }
 }

@@ -10,7 +10,8 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/code.css',
                 'resources/js/app.js',
-                'resources/js/clipboard.js'
+                'resources/js/clipboard.js',
+                'resources/js/highlight.js'
             ],
             refresh: true,
             detectTls: 'unserialize.test',
