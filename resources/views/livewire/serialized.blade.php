@@ -42,7 +42,7 @@
             <p class="mt-3 leading-7">Paste a value produced by PHP's <code>serialize()</code> function into the converter above, select <strong>Unserialize</strong>, then review or copy the readable JSON result.</p>
             <ol class="mt-4 list-decimal space-y-2 pl-6 leading-7">
                 <li>Copy the complete serialized value, including its type markers, lengths, and delimiters.</li>
-                <li>Paste it into the editor and select <strong>Unserialize</strong>.</li>
+                <li>Paste it into the editor and click on <strong>Unserialize</strong>.</li>
                 <li>Use the JSON result to inspect the structure without editing the original value by hand.</li>
             </ol>
         </section>
