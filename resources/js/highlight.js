@@ -68,7 +68,9 @@ async function highlightElement(element) {
 }
 
 function highlightAll() {
-    document.querySelectorAll('pre[data-lang]').forEach(highlightElement);
+    // `data-highlight="off"` opts a block out. The diagnostic excerpt renders
+    // its own <mark>, which replacing innerHTML with Shiki tokens would destroy.
+    document.querySelectorAll('pre[data-lang]:not([data-highlight="off"])').forEach(highlightElement);
 }
 
 highlightAll();

@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\ConversionErrorCode;
+use App\Enums\SyntaxErrorCode;
 use App\Models\Output;
 
 it('returns 200 with a structured native value without persistence', function () {
@@ -59,10 +61,66 @@ it('returns 422 with stable conversion error codes', function (string $serialize
 
     $this->assertDatabaseCount('outputs', 0);
 })->with([
-    'invalid input' => ['invalid', 'invalid_input', 'Invalid serialized data.'],
     'unsupported object' => ['O:8:"stdClass":0:{}', 'unsupported_object', 'Serialized objects are not supported.'],
     'encoding failure' => ['a:1:{s:5:"value";d:NAN;}', 'encoding_failed', 'Failed to encode the serialized data to JSON.'],
 ]);
+
+it('returns 422 with a located diagnostic for invalid serialized input', function () {
+    $this->postJson('/api/v1/unserialize', ['serialized' => 'a:10:{s:4:"names";s:6:"Chrome";}'])
+        ->assertUnprocessable()
+        ->assertExactJson([
+            'error' => [
+                'code' => 'invalid_input',
+                'message' => 'Invalid serialized data.',
+                'diagnostic' => [
+                    'code' => 'string_length_mismatch',
+                    'message' => 'The string starting at byte 6 declares 4 bytes but 5 bytes precede the closing quote.',
+                    'offset' => 6,
+                    'length' => 11,
+                    'suggestion' => 'Change `s:4:` to `s:5:`.',
+                ],
+            ],
+        ]);
+
+    $this->assertDatabaseCount('outputs', 0);
+});
+
+it('locates input that is not serialized data at all', function () {
+    $this->postJson('/api/v1/unserialize', ['serialized' => 'invalid'])
+        ->assertUnprocessable()
+        ->assertJsonPath('error.diagnostic.code', 'missing_delimiter')
+        ->assertJsonPath('error.diagnostic.offset', 1)
+        ->assertJsonPath('error.diagnostic.length', 1);
+});
+
+it('omits the diagnostic for failures that have no byte position', function (string $serializedData, string $code) {
+    $this->postJson('/api/v1/unserialize', ['serialized' => $serializedData])
+        ->assertJsonPath('error.code', $code)
+        ->assertJsonMissingPath('error.diagnostic');
+})->with([
+    'unsupported object' => ['O:8:"stdClass":0:{}', 'unsupported_object'],
+    'encoding failure' => ['a:1:{s:5:"value";d:NAN;}', 'encoding_failed'],
+]);
+
+it('never echoes submitted bytes back in the diagnostic', function () {
+    $response = $this->postJson('/api/v1/unserialize', [
+        'serialized' => 'a:1:{s:3:"keys";s:11:"SUPERSECRET";}',
+    ]);
+
+    $response->assertUnprocessable()->assertJsonPath('error.diagnostic.code', 'string_length_mismatch');
+
+    expect($response->getContent())->not->toContain('SUPERSECRET');
+});
+
+it('keeps the validation details shape separate from the diagnostic shape', function () {
+    $this->postJson('/api/v1/unserialize')
+        ->assertJsonPath('error.details.serialized.0', 'The serialized field is required.')
+        ->assertJsonMissingPath('error.diagnostic');
+
+    $this->postJson('/api/v1/unserialize', ['serialized' => 'invalid'])
+        ->assertJsonMissingPath('error.details')
+        ->assertJsonPath('error.diagnostic.code', 'missing_delimiter');
+});
 
 it('returns 413 when the serialized value exceeds 262144 bytes', function () {
     $this->postJson('/api/v1/unserialize', [
@@ -112,4 +170,29 @@ it('publishes the OpenAPI contract from a stable URL', function () {
         ->assertJsonPath('openapi', '3.1.0')
         ->assertJsonPath('paths./api/v1/unserialize.post.operationId', 'convertSerializedPhpToJson')
         ->assertJsonPath('paths./api/v1/unserialize.post.responses.429.headers.Retry-After.required', true);
+});
+
+it('publishes every diagnostic code in the OpenAPI contract', function () {
+    $document = $this->getJson('/openapi.json')->json();
+
+    expect($document['info']['version'])->toBe('1.1.0')
+        ->and($document['components']['schemas']['Diagnostic']['additionalProperties'])->toBeFalse()
+        ->and($document['components']['schemas']['Diagnostic']['required'])
+        ->toEqualCanonicalizing(['code', 'message', 'offset', 'length'])
+        ->and($document['components']['schemas']['Diagnostic']['properties']['code']['enum'])
+        ->toEqualCanonicalizing(array_map(
+            static fn (SyntaxErrorCode $code): string => $code->value,
+            SyntaxErrorCode::cases(),
+        ))
+        ->and($document['components']['schemas']['Error']['properties']['diagnostic'])
+        ->toBe(['$ref' => '#/components/schemas/Diagnostic'])
+        ->and($document['components']['schemas']['Error']['required'])->not->toContain('diagnostic');
+});
+
+it('publishes every conversion error code in the OpenAPI contract', function () {
+    $published = $this->getJson('/openapi.json')->json('components.schemas.Error.properties.code.enum');
+
+    foreach (ConversionErrorCode::cases() as $code) {
+        expect($published)->toContain($code->value);
+    }
 });

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Unserialize API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Stateless conversion of supported PHP serialized values to JSON. Request and response bodies are not retained.",
     "license": {
       "name": "MIT",
@@ -114,6 +114,22 @@
           }
         }
       },
+      "Diagnostic": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "message", "offset", "length"],
+        "description": "Locates the first syntax problem in the submitted value. Byte offsets index the value you sent; no submitted bytes are returned.",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": ["array_count_mismatch","depth_limit_exceeded","invalid_array_key","malformed_number","missing_delimiter","missing_terminator","string_length_mismatch","trailing_data","unexpected_end","unknown_syntax_error","unknown_type_marker"]
+          },
+          "message": { "type": "string" },
+          "offset": { "type": "integer", "minimum": 0 },
+          "length": { "type": "integer", "minimum": 0 },
+          "suggestion": { "type": "string" }
+        }
+      },
       "Error": {
         "type": "object",
         "additionalProperties": false,
@@ -121,13 +137,15 @@
         "properties": {
           "code": {
             "type": "string",
-            "enum": ["validation_error", "invalid_input", "unsupported_object", "input_too_large", "encoding_failed", "unsupported_media_type", "rate_limited"]
+            "enum": ["validation_error", "invalid_input", "unsupported_object", "input_too_large", "encoding_failed", "depth_limit_exceeded", "unsupported_media_type", "rate_limited"]
           },
           "message": { "type": "string" },
           "details": {
             "type": "object",
+            "description": "Field-to-messages map, present only when code is validation_error.",
             "additionalProperties": { "type": "array", "items": { "type": "string" } }
-          }
+          },
+          "diagnostic": { "$ref": "#/components/schemas/Diagnostic" }
         }
       },
       "ErrorResponse": {
@@ -162,7 +180,7 @@
           "application/json": {
             "schema": { "$ref": "#/components/schemas/ErrorResponse" },
             "examples": {
-              "invalid": { "value": { "error": { "code": "invalid_input", "message": "Invalid serialized data." } } },
+              "invalid": { "value": { "error": { "code": "invalid_input", "message": "Invalid serialized data.", "diagnostic": { "code": "string_length_mismatch", "message": "The string starting at byte 6 declares 4 bytes but 5 bytes precede the closing quote.", "offset": 6, "length": 11, "suggestion": "Change `s:4:` to `s:5:`." } } } },
               "object": { "value": { "error": { "code": "unsupported_object", "message": "Serialized objects are not supported." } } }
             }
           }

@@ -24,15 +24,32 @@ class UnserializeController extends Controller
         try {
             $result = (new Serialized($serialized))->convert();
         } catch (ConversionException $exception) {
-            $telemetry->record(ConversionInterface::Api, $exception->errorCode->value, strlen($serialized), $startedAt);
+            $telemetry->record(
+                ConversionInterface::Api,
+                $exception->errorCode->value,
+                strlen($serialized),
+                $startedAt,
+                $exception->diagnostic?->code,
+            );
+
             $status = $exception->errorCode === ConversionErrorCode::InputTooLarge ? 413 : 422;
 
-            return response()->json([
-                'error' => [
-                    'code' => $exception->errorCode->value,
-                    'message' => $exception->getMessage(),
-                ],
-            ], $status);
+            /**
+             * The diagnostic goes under its own key rather than `details`, which
+             * this envelope already uses for the validation field map. No
+             * submitted bytes are returned: the caller holds the value it sent,
+             * so `offset` and `length` locate the problem on their own.
+             */
+            $error = [
+                'code' => $exception->errorCode->value,
+                'message' => $exception->getMessage(),
+            ];
+
+            if ($exception->diagnostic !== null) {
+                $error['diagnostic'] = $exception->diagnostic->toArray();
+            }
+
+            return response()->json(['error' => $error], $status);
         }
 
         $telemetry->record(ConversionInterface::Api, 'success', strlen($serialized), $startedAt);

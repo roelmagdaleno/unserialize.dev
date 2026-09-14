@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Enums\ConversionErrorCode;
 use App\Enums\ConversionInterface;
+use App\Enums\SyntaxErrorCode;
 use App\Exceptions\ConversionException;
 use App\Services\ConversionTelemetry;
 use App\Services\Serialized;
@@ -23,7 +24,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name('convert_php_serialized_data')]
 #[Title('Convert PHP Serialized Data')]
-#[Description('Convert one PHP serialized value to structured JSON. Input is limited to 262144 bytes, objects are rejected, and submitted data is not retained.')]
+#[Description('Convert one PHP serialized value to structured JSON. Input is limited to 262144 bytes, objects are rejected, and submitted data is not retained. Invalid input returns error.diagnostic with a byte offset, a length, and a suggested correction; the tool never rewrites the input for you.')]
 #[IsReadOnly]
 #[IsIdempotent]
 #[IsDestructive(false)]
@@ -57,9 +58,19 @@ class ConvertSerializedDataTool extends Tool
         try {
             $result = (new Serialized($arguments['serialized']))->convert();
         } catch (ConversionException $exception) {
-            $telemetry->record(ConversionInterface::Mcp, $exception->errorCode->value, $inputBytes, $startedAt);
+            $telemetry->record(
+                ConversionInterface::Mcp,
+                $exception->errorCode->value,
+                $inputBytes,
+                $startedAt,
+                $exception->diagnostic?->code,
+            );
 
-            return $this->error($exception->errorCode->value, $exception->getMessage());
+            return $this->error(
+                $exception->errorCode->value,
+                $exception->getMessage(),
+                $exception->diagnostic?->toArray(),
+            );
         }
 
         $telemetry->record(ConversionInterface::Mcp, 'success', $inputBytes, $startedAt);
@@ -110,17 +121,32 @@ class ConvertSerializedDataTool extends Tool
                     ),
                 ])->required(),
                 'message' => $schema->string()->required(),
+                'diagnostic' => $schema->object([
+                    'code' => $schema->string()->enum(array_map(
+                        static fn (SyntaxErrorCode $code): string => $code->value,
+                        SyntaxErrorCode::cases(),
+                    ))->required(),
+                    'message' => $schema->string()->required(),
+                    'offset' => $schema->integer()->required(),
+                    'length' => $schema->integer()->required(),
+                    'suggestion' => $schema->string(),
+                ])->withoutAdditionalProperties()
+                    ->description('Present only when the failure can be located. Byte offsets index the value you submitted; no submitted bytes are returned.'),
             ])->withoutAdditionalProperties(),
         ];
     }
 
-    private function error(string $code, string $message): ResponseFactory
+    /**
+     * @param  array<string, mixed>|null  $diagnostic
+     */
+    private function error(string $code, string $message, ?array $diagnostic = null): ResponseFactory
     {
         $error = [
-            'error' => [
+            'error' => array_filter([
                 'code' => $code,
                 'message' => $message,
-            ],
+                'diagnostic' => $diagnostic,
+            ], static fn (mixed $value): bool => $value !== null),
         ];
 
         return Response::make(Response::error((string) json_encode($error, JSON_UNESCAPED_SLASHES)))

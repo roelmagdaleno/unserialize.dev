@@ -49,6 +49,9 @@ it('publishes developer instructions for both stateless interfaces', function ()
         ->assertSee('convert_php_serialized_data')
         ->assertSee('262,144 input bytes')
         ->assertSee('10 requests per minute')
+        ->assertSee('error.diagnostic')
+        ->assertSee('never contain bytes from the submitted value')
+        ->assertSee('never rewrites the submitted value')
         ->assertSee(route('openapi'))
         ->assertSee(route('privacy'));
 });

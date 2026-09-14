@@ -5,6 +5,8 @@ it('explains stateless processing and legacy output retention', function () {
         ->assertSee('New conversions are processed in memory')
         ->assertSee('not stored in the outputs database')
         ->assertSee('Request bodies are not recorded in application logs or Nightwatch')
+        ->assertSee('a diagnostic category')
+        ->assertSee('not submitted serialized values, byte offsets, or converted content')
         ->assertSee('Legacy output links')
         ->assertSee('may remain available')
         ->assertSee('262,144 bytes');

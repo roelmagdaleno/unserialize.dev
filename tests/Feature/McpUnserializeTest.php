@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\SyntaxErrorCode;
 use App\Http\Middleware\ValidateMcpRequestOrigin;
 use App\Mcp\Servers\UnserializeServer;
 use App\Mcp\Tools\ConvertSerializedDataTool;
@@ -131,4 +132,41 @@ test('the mcp transport accepts the configured origin', function () {
 test('rate limiting is isolated from the sqlite application database', function () {
     expect(config('cache.limiter'))->toBe('array')
         ->and(file_get_contents(base_path('.env.example')))->toContain('CACHE_LIMITER=file');
+});
+
+test('the mcp tool returns a located diagnostic for invalid input', function () {
+    UnserializeServer::tool(ConvertSerializedDataTool::class, [
+        'serialized' => 'a:10:{s:4:"names";s:6:"Chrome";}',
+    ])->assertHasErrors()->assertStructuredContent(fn ($json) => $json
+        ->where('error.code', 'invalid_input')
+        ->where('error.message', 'Invalid serialized data.')
+        ->where('error.diagnostic.code', 'string_length_mismatch')
+        ->where('error.diagnostic.offset', 6)
+        ->where('error.diagnostic.length', 11)
+        ->where('error.diagnostic.suggestion', 'Change `s:4:` to `s:5:`.')
+        ->has('error.diagnostic.message'));
+});
+
+test('the mcp tool omits the diagnostic for failures without a byte position', function () {
+    UnserializeServer::tool(ConvertSerializedDataTool::class, [
+        'serialized' => 'O:8:"stdClass":0:{}',
+    ])->assertHasErrors()->assertStructuredContent(fn ($json) => $json
+        ->where('error.code', 'unsupported_object')
+        ->has('error.message')
+        ->missing('error.diagnostic'));
+});
+
+test('mcp discovery declares the diagnostic as an optional closed object', function () {
+    $tool = app(ConvertSerializedDataTool::class)->toArray();
+    $error = $tool['outputSchema']['properties']['error'];
+    $diagnostic = $error['properties']['diagnostic'];
+
+    expect($diagnostic['additionalProperties'])->toBeFalse()
+        ->and($diagnostic['required'])->toEqualCanonicalizing(['code', 'message', 'offset', 'length'])
+        ->and($diagnostic['properties']['code']['enum'])->toEqualCanonicalizing(array_map(
+            static fn (SyntaxErrorCode $code): string => $code->value,
+            SyntaxErrorCode::cases(),
+        ))
+        ->and($error['required'] ?? [])->not->toContain('diagnostic')
+        ->and($tool['description'])->toContain('never rewrites the input for you');
 });

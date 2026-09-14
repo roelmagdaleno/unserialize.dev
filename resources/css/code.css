@@ -8,6 +8,12 @@
     --inline-code-bg: #f1f2f4;
     --inline-code-border: #e3e5e9;
     --inline-code-text: #323a45;
+
+    /* Catppuccin Latte red, tuned to sit on the code block surface. */
+    --diagnostic-span-bg: #f6d5da;
+    --diagnostic-span-border: #b60d33;
+    --diagnostic-span-text: #3a2b31;
+    --diagnostic-ellipsis: #7c7f93;
 }
 
 html.dark {
@@ -19,6 +25,12 @@ html.dark {
     --inline-code-bg: #262638;
     --inline-code-border: #313244;
     --inline-code-text: #dfe4f2;
+
+    /* Catppuccin Mocha red. */
+    --diagnostic-span-bg: #4a2c3a;
+    --diagnostic-span-border: #f38ba8;
+    --diagnostic-span-text: #f7e3e7;
+    --diagnostic-ellipsis: #7f849c;
 }
 
 /*
@@ -77,4 +89,51 @@ button[data-clipboard-target] {
 
 button[data-clipboard-target]:hover {
     opacity: 1;
+}
+
+/*
+ * The diagnostic excerpt is never syntax highlighted. It carries no `data-lang`
+ * and is marked `data-highlight="off"`, so `resources/js/highlight.js` leaves it
+ * alone and the server-rendered <mark> survives every Livewire re-render.
+ */
+.diagnostic-excerpt {
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+    border-color: var(--code-border);
+    background-color: var(--code-bg);
+    color: var(--code-text);
+    font-size: var(--text-sm);
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 4;
+}
+
+/*
+ * An inset shadow rather than a border: a real border on an inline element
+ * shifts the surrounding glyphs, which would pull the frame out of alignment
+ * with the byte offset printed above it. `box-decoration-break: clone` redraws
+ * the frame on every wrapped line instead of once around the union box.
+ */
+.diagnostic-excerpt mark.diagnostic-span {
+    border-radius: .25rem;
+    background-color: var(--diagnostic-span-bg);
+    color: var(--diagnostic-span-text);
+    box-shadow: inset 0 0 0 2px var(--diagnostic-span-border);
+    padding-block: .125rem;
+    padding-inline: .0625rem;
+    text-decoration: underline wavy var(--diagnostic-span-border);
+    text-underline-offset: 4px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+}
+
+/* A zero-length problem marks a position, so it is drawn as a caret. */
+.diagnostic-excerpt mark.diagnostic-span--caret {
+    box-shadow: inset 2px 0 0 0 var(--diagnostic-span-border);
+    text-decoration: none;
+}
+
+.diagnostic-excerpt .diagnostic-ellipsis {
+    color: var(--diagnostic-ellipsis);
 }

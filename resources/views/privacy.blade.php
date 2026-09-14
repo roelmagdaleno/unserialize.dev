@@ -3,7 +3,7 @@
         <h2>Privacy and retention</h2>
         <p>Last reviewed September 13, 2026.</p>
         <p>New conversions are processed in memory. Your serialized input is transmitted to the Unserialize server, converted, returned to your browser, and not stored in the outputs database.</p>
-        <p>Request bodies are not recorded in application logs or Nightwatch. Operational telemetry uses only the interface, outcome category, latency, and an input-size bucket—not submitted serialized values or converted content.</p>
+        <p>Request bodies are not recorded in application logs or Nightwatch. Operational telemetry uses only the interface, outcome category, a diagnostic category, latency, and an input-size bucket—not submitted serialized values, byte offsets, or converted content.</p>
         <h3>Limits and unsupported data</h3>
         <p>Inputs are limited to 262,144 bytes. PHP objects are rejected and classes are disabled during decoding. Invalid data and values that cannot be represented as JSON return an error.</p>
         <h3>Legacy output links</h3>
