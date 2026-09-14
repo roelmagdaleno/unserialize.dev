@@ -72,3 +72,8 @@ test('the anonymous mcp transport is separately rate limited', function () {
     expect($route)->not->toBeNull()
         ->and($route->middleware())->toContain('throttle:unserialize-mcp');
 });
+
+test('rate limiting is isolated from the sqlite application database', function () {
+    expect(config('cache.limiter'))->toBe('array')
+        ->and(file_get_contents(base_path('.env.example')))->toContain('CACHE_LIMITER=file');
+});
