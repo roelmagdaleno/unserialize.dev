@@ -10,11 +10,22 @@ it('lists only canonical public pages in the XML sitemap', function () {
         ->assertSee(route('guides.serialization'), false)
         ->assertSee(route('security'), false)
         ->assertSee(route('guides.wordpress'), false)
+        ->assertSee(route('developers'), false)
         ->assertDontSee('/o/', false)
         ->assertDontSee('/api/', false)
         ->assertDontSee('/mcp/', false);
 
     expect(simplexml_load_string($response->getContent()))->not->toBeFalse();
+});
+
+it('publishes concise agent discovery with canonical documentation only', function () {
+    $this->get(route('llms'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+        ->assertHeader('Cache-Control', 'max-age=3600, public')
+        ->assertSee('https://unserialize.dev/developers', false)
+        ->assertSee('https://unserialize.dev/openapi.json', false)
+        ->assertDontSee('/o/', false);
 });
 
 it('advertises the sitemap without blocking legacy output crawling', function () {

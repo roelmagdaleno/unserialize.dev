@@ -46,3 +46,16 @@ it('keeps published examples aligned with the conversion service', function (str
     'homepage example' => ['a:2:{s:4:"name";s:6:"Chrome";s:6:"active";b:1;}', ['name' => 'Chrome', 'active' => true]],
     'WordPress example' => ['a:2:{s:10:"show_title";b:1;s:14:"posts_per_page";i:10;}', ['show_title' => true, 'posts_per_page' => 10]],
 ]);
+
+it('publishes developer instructions for both stateless interfaces', function () {
+    $this->get(route('developers'))
+        ->assertOk()
+        ->assertSee('API and MCP developer guide')
+        ->assertSee(url('/api/v1/unserialize'))
+        ->assertSee(url('/mcp/unserialize'))
+        ->assertSee('convert_php_serialized_data')
+        ->assertSee('262,144 input bytes')
+        ->assertSee('10 requests per minute')
+        ->assertSee(route('openapi'))
+        ->assertSee(route('privacy'));
+});

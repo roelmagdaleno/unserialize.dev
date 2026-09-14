@@ -10,6 +10,7 @@ Route::view('/privacy', 'privacy')->name('privacy');
 Route::view('/guides/php-serialization', 'guides.serialization')->name('guides.serialization');
 Route::view('/guides/wordpress', 'guides.wordpress')->name('guides.wordpress');
 Route::view('/security', 'security')->name('security');
+Route::view('/developers', 'developers')->name('developers');
 Route::get('/sitemap.xml', function () {
     return response()
         ->view('sitemap')
@@ -21,8 +22,19 @@ Route::get('/robots.txt', fn () => response("User-agent: *\nAllow: /\n\nSitemap:
 Route::get('/openapi.json', fn () => response(
     file_get_contents(public_path('openapi.json')),
     200,
-    ['Content-Type' => 'application/json'],
+    [
+        'Content-Type' => 'application/json',
+        'Cache-Control' => 'public, max-age=3600',
+    ],
 ))->name('openapi');
+Route::get('/llms.txt', fn () => response(
+    file_get_contents(public_path('llms.txt')),
+    200,
+    [
+        'Content-Type' => 'text/plain; charset=UTF-8',
+        'Cache-Control' => 'public, max-age=3600',
+    ],
+))->name('llms');
 Route::get('/o', fn () => redirect('/'));
 Route::get('/o/{output}', Output::class)
     ->middleware(AddLegacyOutputNoIndexHeader::class)

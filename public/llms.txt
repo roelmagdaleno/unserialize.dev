@@ -1,0 +1,17 @@
+# Unserialize
+
+> A stateless PHP serialized-data to JSON converter. Serialized objects are rejected and input is limited to 262,144 bytes.
+
+## Documentation
+
+- https://unserialize.dev/: Browser converter and tested usage reference
+- https://unserialize.dev/guides/php-serialization: PHP serialization format and JSON mapping
+- https://unserialize.dev/guides/wordpress: WordPress inspection workflow
+- https://unserialize.dev/security: Security model and reporting
+- https://unserialize.dev/privacy: Privacy and retention contract
+- https://unserialize.dev/developers: HTTP API and MCP integration guide
+- https://unserialize.dev/openapi.json: OpenAPI 3.1 description
+
+## Source
+
+- https://github.com/roelmagdaleno/unserialize

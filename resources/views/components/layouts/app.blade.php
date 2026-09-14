@@ -26,6 +26,11 @@
             'description' => 'A practical, cautious workflow for inspecting serialized WordPress options and metadata.',
             'canonical' => route('guides.wordpress'),
         ],
+        'developers' => [
+            'title' => 'API and MCP Developer Guide | Unserialize',
+            'description' => 'Integrate the stateless PHP serialized-data converter through its versioned JSON API or read-only MCP tool.',
+            'canonical' => route('developers'),
+        ],
         'outputs' => [
             'title' => 'Legacy conversion output | Unserialize',
             'description' => 'A private legacy conversion output.',
@@ -132,12 +137,14 @@
             <a href="{{ route('guides.wordpress') }}" class="text-blue-900 hover:underline dark:text-blue-300">WordPress</a>
             <a href="{{ route('security') }}" class="text-blue-900 hover:underline dark:text-blue-300">Security</a>
             <a href="{{ route('privacy') }}" class="text-blue-900 hover:underline dark:text-blue-300">Privacy</a>
+            <a href="{{ route('developers') }}" class="text-blue-900 hover:underline dark:text-blue-300">Developers</a>
         </nav>
         {{ $slot }}
         <footer>
             <p class="mt-8 text-sm text-gray-700 dark:text-gray-300">
                 Built with ❤️ by <a href="https://github.com/roelmagdaleno" class="text-blue-900 dark:text-blue-300">Roel</a>.
                 Source on <a href="https://github.com/roelmagdaleno/unserialize" class="text-blue-900 dark:text-blue-300">GitHub</a>.
+                <a href="{{ route('developers') }}" class="text-blue-900 dark:text-blue-300">API and MCP documentation</a>.
             </p>
         </footer>
     </main>

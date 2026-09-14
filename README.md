@@ -1,66 +1,61 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Unserialize
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+[Unserialize](https://unserialize.dev) converts PHP serialized values into readable JSON. It provides a Livewire browser interface, a versioned JSON API, and a read-only MCP tool backed by the same conversion service.
 
-## About Laravel
+## Behavior and privacy
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Supported values include `null`, booleans, integers, floats, strings, indexed arrays, associative arrays, and nested combinations of those values. Serialized objects are rejected. Inputs are capped at 262,144 bytes and decoding depth is capped at 512.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+New conversions are processed in memory and create no `outputs` database record. Submitted values and converted content are excluded from application telemetry. Existing legacy `/o/{uuid}` records remain readable for compatibility and are returned with `noindex` directives. See the public [privacy contract](https://unserialize.dev/privacy), [security guide](https://unserialize.dev/security), and the implementation in [`app/Services/Serialized.php`](app/Services/Serialized.php).
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Do not treat decoded content as trusted data. Redact credentials, personal data, and private URLs before submitting a value.
 
-## Learning Laravel
+## Local setup
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Requirements are PHP 8.4, Composer, Node.js, and SQLite or another Laravel-supported database.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+touch database/database.sqlite
+php artisan migrate --no-interaction
+npm install
+npm run build
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Set `APP_URL` to the local URL used by your environment. Laravel Herd users can visit `https://unserialize.test`; no development server command is needed.
 
-## Laravel Sponsors
+## HTTP API
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+Send JSON to `POST https://unserialize.dev/api/v1/unserialize`. The public endpoint requires no authentication and allows 10 requests per minute per network address.
 
-### Premium Partners
+```bash
+curl --request POST 'https://unserialize.dev/api/v1/unserialize' \
+  --header 'Content-Type: application/json' \
+  --data '{"serialized":"a:2:{s:4:\"name\";s:5:\"Codex\";s:6:\"active\";b:1;}"}'
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+The response contains the native JSON value in `data.value` and `meta.retained: false`. See the [developer guide](https://unserialize.dev/developers) and [OpenAPI 3.1 contract](https://unserialize.dev/openapi.json) for every response and stable error code.
 
-## Contributing
+## MCP
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Connect a Streamable HTTP MCP client to `https://unserialize.dev/mcp/unserialize`, then discover and call `convert_php_serialized_data`. Its only argument is the `serialized` string. The anonymous endpoint has its own 10-request-per-minute limit, and the tool is read-only and idempotent.
 
-## Code of Conduct
+## Verification
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+vendor/bin/pint --format agent
+php artisan test --compact
+npm run build
+composer validate --strict --no-check-publish
+composer audit --locked --no-interaction
+```
 
-## Security Vulnerabilities
+Focused behavior is covered by the [service tests](tests/Unit/UnserializeTest.php), [browser tests](tests/Feature/UnserializeTest.php), [API tests](tests/Feature/UnserializeApiTest.php), and [MCP tests](tests/Feature/McpUnserializeTest.php).
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Security and license
 
-## License
+Report vulnerabilities privately to [roelmagdaleno@gmail.com](mailto:roelmagdaleno@gmail.com). Source and issue tracking live at [github.com/roelmagdaleno/unserialize](https://github.com/roelmagdaleno/unserialize).
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Unserialize is open-source software licensed under the [MIT license](LICENSE).
