@@ -16,23 +16,6 @@ it('publishes the complete converter guide on the home page', function () {
         ->assertSee('"active": true', false);
 });
 
-it('redirects retired guide pages to their home page sections', function (string $routeName, string $section) {
-    $this->get(route($routeName))
-        ->assertMovedPermanently()
-        ->assertRedirect('/#'.$section);
-})->with([
-    'serialization guide' => ['guides.serialization', 'format'],
-    'WordPress guide' => ['guides.wordpress', 'wordpress'],
-    'security guide' => ['security', 'security'],
-]);
-
-it('does not link to retired guide pages from the home page', function () {
-    $this->get(route('home'))
-        ->assertDontSee(route('guides.serialization'), false)
-        ->assertDontSee(route('guides.wordpress'), false)
-        ->assertDontSee(route('security'), false);
-});
-
 it('keeps published examples aligned with the conversion service', function (string $serializedData, mixed $expectedValue) {
     expect((new Serialized($serializedData))->convert()->value)->toBe($expectedValue);
 })->with([

@@ -33,7 +33,7 @@ Route::view('/privacy', 'privacy')
     ->middleware(NegotiateMarkdownRepresentation::class.':markdown.privacy')
     ->withHead(
         title: 'Privacy and Retention',
-        description: 'Learn how Unserialize processes PHP serialized data, and protects submitted values.',
+        description: 'Learn how Unserialize processes PHP serialized data and protects submitted values.',
         canonical: ['value' => $pageUrl('/privacy'), 'forceHttps' => false],
         og: ['url' => $pageUrl('/privacy')],
     );

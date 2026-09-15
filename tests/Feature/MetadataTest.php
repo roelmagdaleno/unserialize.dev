@@ -17,7 +17,7 @@ it('renders unique self-canonical metadata on every indexable page', function (s
         ->assertSee('<meta property="og:image" content="'.asset('images/social.png').'">', false);
 })->with([
     'home' => ['home', '/', 'PHP Unserialize to JSON Converter | Unserialize', 'Convert PHP serialized data to readable JSON without storing your input. Includes tested mappings, limits, and object-safety guidance.'],
-    'privacy' => ['privacy', '/privacy', 'Privacy and Retention | Unserialize', 'Learn how Unserialize processes PHP serialized data, protects submitted values, and handles legacy output links.'],
+    'privacy' => ['privacy', '/privacy', 'Privacy and Retention | Unserialize', 'Learn how Unserialize processes PHP serialized data and protects submitted values.'],
     'developer guide' => ['developers', '/developers', 'API and MCP Developer Guide | Unserialize', 'Integrate the stateless PHP serialized-data converter through its versioned JSON API or read-only MCP tool.'],
 ]);
 

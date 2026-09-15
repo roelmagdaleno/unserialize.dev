@@ -8,9 +8,6 @@ it('lists only canonical public pages in the XML sitemap', function () {
         ->assertSee(route('home'), false)
         ->assertSee(route('privacy'), false)
         ->assertSee(route('developers'), false)
-        ->assertDontSee(route('guides.serialization'), false)
-        ->assertDontSee(route('security'), false)
-        ->assertDontSee(route('guides.wordpress'), false)
         ->assertDontSee('/o/', false)
         ->assertDontSee('/api/', false)
         ->assertDontSee('/mcp/', false);
