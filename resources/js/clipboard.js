@@ -17,4 +17,13 @@ clipboard.on('success', (element) => {
     element.trigger.innerHTML = `${clipboardCopiedIcon}`;
     element.clearSelection();
     setTimeout(() => element.trigger.innerHTML = `${clipboardIcon}`, 1500);
+
+    // Only the fact that a copy succeeded is reported. The copied text stays in
+    // the browser: a button that opts in names its event, and nothing else about
+    // the copy is sent.
+    const copyEvent = element.trigger.dataset.clipboardEvent;
+
+    if (copyEvent && window.Livewire) {
+        window.Livewire.dispatch(copyEvent);
+    }
 });

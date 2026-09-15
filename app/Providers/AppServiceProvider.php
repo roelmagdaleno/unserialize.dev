@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Http\Controllers\Api\V1\UnserializeController;
+use App\Mcp\Tools\ConvertSerializedDataTool;
 use App\Services\ConversionTelemetry;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -42,6 +45,12 @@ class AppServiceProvider extends ServiceProvider
                         'rate_limited',
                         strlen((string) $request->input('serialized', '')),
                         hrtime(true),
+                        null,
+                        UsageContext::fromRequest(
+                            $request,
+                            apiVersion: UnserializeController::API_VERSION,
+                            httpStatus: 429,
+                        ),
                     );
 
                     return response()->json([
@@ -61,6 +70,18 @@ class AppServiceProvider extends ServiceProvider
                     'rate_limited',
                     0,
                     hrtime(true),
+                    null,
+                    /**
+                     * The limit is reached before the request is dispatched, so
+                     * the tool is named from the one tool this endpoint exposes
+                     * rather than from anything in the rejected payload.
+                     */
+                    UsageContext::fromRequest(
+                        $request,
+                        httpStatus: 429,
+                        mcpTool: ConvertSerializedDataTool::NAME,
+                        mcpTransport: ConvertSerializedDataTool::TRANSPORT,
+                    ),
                 );
 
                 return response()->json([

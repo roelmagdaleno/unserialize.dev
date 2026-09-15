@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Data\UsageContext;
 use App\Enums\ConversionErrorCode;
 use App\Enums\ConversionInterface;
 use App\Enums\SyntaxErrorCode;
@@ -9,6 +10,7 @@ use App\Exceptions\ConversionException;
 use App\Services\ConversionTelemetry;
 use App\Services\Serialized;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
+use Illuminate\Http\Request as HttpRequest;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
@@ -22,7 +24,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsIdempotent;
 use Laravel\Mcp\Server\Tools\Annotations\IsOpenWorld;
 use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
-#[Name('convert_php_serialized_data')]
+#[Name(ConvertSerializedDataTool::NAME)]
 #[Title('Convert PHP Serialized Data')]
 #[Description('Convert one PHP serialized value to structured JSON. Input is limited to 262144 bytes, objects are rejected, and submitted data is not retained. Invalid input returns error.diagnostic with a byte offset, a length, and a suggested correction; the tool never rewrites the input for you.')]
 #[IsReadOnly]
@@ -31,6 +33,21 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsOpenWorld(false)]
 class ConvertSerializedDataTool extends Tool
 {
+    /**
+     * The application-owned tool name.
+     *
+     * Telemetry records this constant rather than anything read back off the
+     * request, so a recorded tool name is always one this application exposes.
+     */
+    public const string NAME = 'convert_php_serialized_data';
+
+    /**
+     * How this server is reached. The MCP server is registered as a web
+     * endpoint only, so the classification is the application's, not a value
+     * read back off a request.
+     */
+    public const string TRANSPORT = 'http';
+
     /**
      * @return array<string, mixed>
      */
@@ -43,14 +60,35 @@ class ConvertSerializedDataTool extends Tool
         return $tool;
     }
 
-    public function handle(Request $request, ConversionTelemetry $telemetry): ResponseFactory
-    {
+    public function handle(
+        Request $request,
+        HttpRequest $httpRequest,
+        ConversionTelemetry $telemetry,
+    ): ResponseFactory {
         $startedAt = hrtime(true);
         $arguments = $request->all();
         $inputBytes = is_string($arguments['serialized'] ?? null) ? strlen($arguments['serialized']) : 0;
 
+        /**
+         * The protocol version belongs to initialization, not to a tool call:
+         * reading it here would mean carrying a session identifier forward.
+         */
+        $context = fn (?string $resultType = null): UsageContext => UsageContext::fromRequest(
+            $httpRequest,
+            resultType: $resultType,
+            mcpTool: self::NAME,
+            mcpTransport: self::TRANSPORT,
+        );
+
         if (array_keys($arguments) !== ['serialized'] || ! is_string($arguments['serialized'])) {
-            $telemetry->record(ConversionInterface::Mcp, 'validation_error', $inputBytes, $startedAt);
+            $telemetry->record(
+                ConversionInterface::Mcp,
+                'validation_error',
+                $inputBytes,
+                $startedAt,
+                null,
+                $context(),
+            );
 
             return $this->error('validation_error', 'Provide exactly one string field named serialized.');
         }
@@ -64,6 +102,7 @@ class ConvertSerializedDataTool extends Tool
                 $inputBytes,
                 $startedAt,
                 $exception->diagnostic?->code,
+                $context(),
             );
 
             return $this->error(
@@ -73,7 +112,14 @@ class ConvertSerializedDataTool extends Tool
             );
         }
 
-        $telemetry->record(ConversionInterface::Mcp, 'success', $inputBytes, $startedAt);
+        $telemetry->record(
+            ConversionInterface::Mcp,
+            'success',
+            $inputBytes,
+            $startedAt,
+            null,
+            $context(UsageContext::resultTypeFor($result->value)),
+        );
 
         return Response::structured([
             'data' => [

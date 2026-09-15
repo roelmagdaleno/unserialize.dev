@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Data\UsageContext;
 use App\Enums\ConversionErrorCode;
 use App\Enums\ConversionInterface;
 use App\Exceptions\ConversionException;
@@ -14,6 +15,16 @@ use Illuminate\Http\JsonResponse;
 class UnserializeController extends Controller
 {
     /**
+     * The version this route publishes.
+     *
+     * Telemetry reads this constant rather than a request header, so a recorded
+     * version is always the one that actually served the call. The 415, 422, and
+     * 429 paths sit outside this controller and read it from here for the same
+     * reason.
+     */
+    public const string API_VERSION = 'v1';
+
+    /**
      * Handle the incoming request.
      */
     public function __invoke(UnserializeRequest $request, ConversionTelemetry $telemetry): JsonResponse
@@ -24,15 +35,16 @@ class UnserializeController extends Controller
         try {
             $result = (new Serialized($serialized))->convert();
         } catch (ConversionException $exception) {
+            $status = $exception->errorCode === ConversionErrorCode::InputTooLarge ? 413 : 422;
+
             $telemetry->record(
                 ConversionInterface::Api,
                 $exception->errorCode->value,
                 strlen($serialized),
                 $startedAt,
                 $exception->diagnostic?->code,
+                UsageContext::fromRequest($request, apiVersion: self::API_VERSION, httpStatus: $status),
             );
-
-            $status = $exception->errorCode === ConversionErrorCode::InputTooLarge ? 413 : 422;
 
             /**
              * The diagnostic goes under its own key rather than `details`, which
@@ -52,7 +64,19 @@ class UnserializeController extends Controller
             return response()->json(['error' => $error], $status);
         }
 
-        $telemetry->record(ConversionInterface::Api, 'success', strlen($serialized), $startedAt);
+        $telemetry->record(
+            ConversionInterface::Api,
+            'success',
+            strlen($serialized),
+            $startedAt,
+            null,
+            UsageContext::fromRequest(
+                $request,
+                apiVersion: self::API_VERSION,
+                httpStatus: 200,
+                resultType: UsageContext::resultTypeFor($result->value),
+            ),
+        );
 
         return response()->json([
             'data' => [

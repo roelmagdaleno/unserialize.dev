@@ -2,11 +2,14 @@
 
 namespace App\Livewire;
 
+use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Enums\UsageEventType;
 use App\Exceptions\ConversionException;
 use App\Livewire\Forms\SerializedForm;
 use App\Services\ConversionTelemetry;
 use App\Services\DiagnosticPresenter;
+use App\Services\UsageEventRecorder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -14,6 +17,7 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Head\Facades\Head;
 use Laravel\Head\Facades\Schema;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\On;
 use Livewire\Component;
 
 class Serialized extends Component
@@ -27,6 +31,15 @@ class Serialized extends Component
     public const string META_DESCRIPTION = 'Convert PHP serialized data to readable JSON without storing your input. Includes tested mappings, limits, and object-safety guidance.';
 
     private const int MAX_ATTEMPTS = 10;
+
+    /**
+     * The status a Livewire update answers with.
+     *
+     * Livewire reports a functional failure inside a successful response, so
+     * this is the transport result only. The event's `outcome` is what says
+     * whether the conversion itself succeeded.
+     */
+    private const int TRANSPORT_STATUS = 200;
 
     /**
      * The serialized form.
@@ -103,8 +116,26 @@ class Serialized extends Component
         $inputBytes = strlen($this->form->serializedData);
         $rateLimitKey = 'unserialize:'.hash('sha256', $request->ip());
 
+        /**
+         * A browser conversion is an XHR, so the observed request URL is
+         * `/livewire/update` and the page that hosted it arrives as the
+         * referrer. Neither is inferred from the submitted payload.
+         */
+        $context = fn (?string $resultType = null): UsageContext => UsageContext::fromRequest(
+            $request,
+            httpStatus: self::TRANSPORT_STATUS,
+            resultType: $resultType,
+        );
+
         if (RateLimiter::tooManyAttempts($rateLimitKey, self::MAX_ATTEMPTS)) {
-            $telemetry->record(ConversionInterface::Browser, 'rate_limited', $inputBytes, $startedAt);
+            $telemetry->record(
+                ConversionInterface::Browser,
+                'rate_limited',
+                $inputBytes,
+                $startedAt,
+                null,
+                $context(),
+            );
             $seconds = RateLimiter::availableIn($rateLimitKey);
             $this->addError(
                 'form.serializedData',
@@ -117,10 +148,25 @@ class Serialized extends Component
         RateLimiter::hit($rateLimitKey, 60);
 
         try {
-            $this->result = $this->form->submit()->json;
-            $telemetry->record(ConversionInterface::Browser, 'success', $inputBytes, $startedAt);
+            $conversion = $this->form->submit();
+            $this->result = $conversion->json;
+            $telemetry->record(
+                ConversionInterface::Browser,
+                'success',
+                $inputBytes,
+                $startedAt,
+                null,
+                $context(UsageContext::resultTypeFor($conversion->value)),
+            );
         } catch (ValidationException $exception) {
-            $telemetry->record(ConversionInterface::Browser, 'validation_error', $inputBytes, $startedAt);
+            $telemetry->record(
+                ConversionInterface::Browser,
+                'validation_error',
+                $inputBytes,
+                $startedAt,
+                null,
+                $context(),
+            );
 
             throw $exception;
         } catch (ConversionException $exception) {
@@ -130,6 +176,7 @@ class Serialized extends Component
                 $inputBytes,
                 $startedAt,
                 $exception->diagnostic?->code,
+                $context(),
             );
 
             $this->result = null;
@@ -143,6 +190,28 @@ class Serialized extends Component
              */
             $this->addError('form.serializedData', $exception->getMessage());
         }
+    }
+
+    /**
+     * Record that the browser reported a successful clipboard copy.
+     *
+     * The client sends nothing but the fact that it happened: neither the
+     * serialized input nor the JSON result travels back. Without a session
+     * identifier this cannot be joined to the conversion that produced the
+     * result, and it is not a conversion, so it counts no aggregate.
+     */
+    #[On('result-copied')]
+    public function resultCopied(Request $request, UsageEventRecorder $recorder): void
+    {
+        if ($this->result === null) {
+            return;
+        }
+
+        $recorder->record(
+            ConversionInterface::Browser,
+            UsageEventType::ResultCopied,
+            UsageContext::fromRequest($request, httpStatus: self::TRANSPORT_STATUS),
+        );
     }
 
     /**

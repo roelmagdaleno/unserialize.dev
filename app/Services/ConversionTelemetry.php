@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
 use App\Enums\SyntaxErrorCode;
+use App\Enums\UsageEventType;
 use App\Models\ConversionMetric;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +13,8 @@ use Throwable;
 
 class ConversionTelemetry
 {
+    public function __construct(private readonly UsageEventRecorder $recorder) {}
+
     /**
      * Record one conversion.
      *
@@ -21,6 +25,14 @@ class ConversionTelemetry
      * it has unbounded cardinality, and across repeated submissions it leaks the
      * shape of data the converter promises not to retain. The parameter is typed
      * as an enum so a fragment of user input cannot reach the logger by mistake.
+     *
+     * The optional context carries the entry point's technology metadata. It is
+     * a typed allowlist rather than an array, and the three untrusted values in
+     * it are normalized on the way to the event table, never into this log.
+     *
+     * The event insert and the aggregate increment are attempted independently:
+     * they answer different questions over different lifetimes, so a failure in
+     * either must leave the other alone and must not reach the caller.
      */
     public function record(
         ConversionInterface $interface,
@@ -28,14 +40,28 @@ class ConversionTelemetry
         int $inputBytes,
         int $startedAt,
         ?SyntaxErrorCode $diagnostic = null,
+        ?UsageContext $context = null,
     ): void {
+        $durationMs = round((hrtime(true) - $startedAt) / 1_000_000, 3);
+        $inputSizeBucket = $this->inputSizeBucket($inputBytes);
+
         Log::info('conversion.completed', array_filter([
             'interface' => $interface->value,
             'outcome' => $outcome,
-            'duration_ms' => round((hrtime(true) - $startedAt) / 1_000_000, 3),
-            'input_size_bucket' => $this->inputSizeBucket($inputBytes),
+            'duration_ms' => $durationMs,
+            'input_size_bucket' => $inputSizeBucket,
             'diagnostic' => $diagnostic?->value,
         ], static fn (mixed $value): bool => $value !== null));
+
+        $this->recorder->record(
+            $interface,
+            UsageEventType::ConversionCompleted,
+            $context,
+            $outcome,
+            $durationMs,
+            $inputSizeBucket,
+            $diagnostic,
+        );
 
         $this->recordAggregate($interface, $outcome);
     }

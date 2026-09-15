@@ -14,7 +14,7 @@
             <flux:error name="form.serializedData" />
 
             <flux:description>
-                Processed in memory, not stored or logged. Max 262,144 bytes. <a class="underline hover:text-zinc-700 dark:hover:text-zinc-200" href="{{ route('privacy') }}">Privacy details</a>.
+                Your input is processed in memory, not stored or logged. Max 262,144 bytes. <a class="underline hover:text-zinc-700 dark:hover:text-zinc-200" href="{{ route('privacy') }}">Privacy details</a>.
             </flux:description>
         </flux:field>
 
@@ -69,7 +69,7 @@
             </div>
             <div class="relative">
                 <pre class="mt-2 rounded-lg p-6" data-lang="json" id="clipText">{{ $result }}</pre>
-                <button class="copyBtn hidden md:block" type="button" title="Copy JSON to clipboard" aria-label="Copy JSON to clipboard" data-clipboard-target="#clipText">
+                <button class="copyBtn hidden md:block" type="button" title="Copy JSON to clipboard" aria-label="Copy JSON to clipboard" data-clipboard-target="#clipText" data-clipboard-event="result-copied">
                     <svg class="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path></svg>
                 </button>
             </div>
@@ -148,7 +148,7 @@
         <section id="security" class="scroll-mt-6" aria-labelledby="security-and-privacy">
             <h2 id="security-and-privacy" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Security and privacy</h2>
             <p class="mt-3 leading-7">Treat serialized data as untrusted input. This converter calls PHP with <code>allowed_classes</code> set to <code>false</code>, rejects decoded objects, limits input to 262,144 bytes, and caps decoding depth.</p>
-            <p class="mt-3 leading-7">Conversions are processed in memory and the submitted value and JSON result are not stored or logged. Even so, remove passwords, tokens, email addresses, private URLs, and other sensitive information before submitting data. Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('privacy') }}">privacy and retention details</a> for the complete policy.</p>
+            <p class="mt-3 leading-7">Conversions are processed in memory and the submitted value and JSON result are not stored or logged. Technical usage metadata such as your User-Agent and the request URL is kept locally for a limited period. Even so, remove passwords, tokens, email addresses, private URLs, and other sensitive information before submitting data. Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('privacy') }}">privacy and retention details</a> for the complete policy.</p>
         </section>
     </div>
 </article>

@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Http\Controllers\Api\V1\UnserializeController;
 use App\Services\ConversionTelemetry;
 use Closure;
 use Illuminate\Http\Request;
@@ -27,6 +29,12 @@ class RequireJsonContentType
                 'unsupported_media_type',
                 strlen($request->getContent()),
                 $startedAt,
+                null,
+                UsageContext::fromRequest(
+                    $request,
+                    apiVersion: UnserializeController::API_VERSION,
+                    httpStatus: 415,
+                ),
             );
 
             return response()->json([

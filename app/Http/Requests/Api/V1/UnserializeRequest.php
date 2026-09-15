@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Http\Controllers\Api\V1\UnserializeController;
 use App\Services\ConversionTelemetry;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
@@ -57,6 +59,12 @@ class UnserializeRequest extends FormRequest
             'validation_error',
             strlen((string) $this->input('serialized', '')),
             $this->telemetryStartedAt,
+            null,
+            UsageContext::fromRequest(
+                $this,
+                apiVersion: UnserializeController::API_VERSION,
+                httpStatus: 422,
+            ),
         );
 
         throw new HttpResponseException(response()->json([
