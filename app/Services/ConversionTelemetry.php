@@ -4,7 +4,10 @@ namespace App\Services;
 
 use App\Enums\ConversionInterface;
 use App\Enums\SyntaxErrorCode;
+use App\Models\ConversionMetric;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class ConversionTelemetry
 {
@@ -33,6 +36,35 @@ class ConversionTelemetry
             'input_size_bucket' => $this->inputSizeBucket($inputBytes),
             'diagnostic' => $diagnostic?->value,
         ], static fn (mixed $value): bool => $value !== null));
+
+        $this->recordAggregate($interface, $outcome);
+    }
+
+    /**
+     * Count this conversion in the durable daily aggregate.
+     *
+     * The log above is the recent diagnostic signal and the aggregate is the
+     * long-lived count, so neither may depend on the other: the log is emitted
+     * first and a persistence failure is swallowed here rather than turning a
+     * conversion the caller already completed into an error. The failure log
+     * carries the exception class and not its message, because a query
+     * exception repeats the statement it failed on, and it is deliberately not
+     * routed back through `record()`, which would re-enter this same write.
+     *
+     * Nothing derived from the submitted value is passed on: the input size
+     * bucket and the diagnostic category stay in the short-lived log only.
+     */
+    private function recordAggregate(ConversionInterface $interface, string $outcome): void
+    {
+        try {
+            ConversionMetric::recordOccurrence($interface, $outcome, CarbonImmutable::now('UTC'));
+        } catch (Throwable $exception) {
+            Log::warning('conversion.metrics_write_failed', [
+                'interface' => $interface->value,
+                'outcome' => $outcome,
+                'exception' => $exception::class,
+            ]);
+        }
     }
 
     private function inputSizeBucket(int $bytes): string

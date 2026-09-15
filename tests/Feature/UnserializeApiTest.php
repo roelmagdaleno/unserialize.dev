@@ -21,6 +21,11 @@ it('returns 200 with a structured native value without persistence', function ()
         ->assertCookieMissing(config('session.cookie'));
 
     $this->assertDatabaseCount('outputs', 1);
+    $this->assertDatabaseHas('conversion_metrics', [
+        'interface' => 'api',
+        'outcome' => 'success',
+        'count' => 1,
+    ]);
 });
 
 it('returns 422 with the stable validation envelope for a missing field', function () {
@@ -35,6 +40,12 @@ it('returns 422 with the stable validation envelope for a missing field', functi
                 ],
             ],
         ]);
+
+    $this->assertDatabaseHas('conversion_metrics', [
+        'interface' => 'api',
+        'outcome' => 'validation_error',
+        'count' => 1,
+    ]);
 });
 
 it('returns 422 when the request contains an undocumented field', function () {
@@ -60,6 +71,11 @@ it('returns 422 with stable conversion error codes', function (string $serialize
         ]);
 
     $this->assertDatabaseCount('outputs', 0);
+    $this->assertDatabaseHas('conversion_metrics', [
+        'interface' => 'api',
+        'outcome' => $code,
+        'count' => 1,
+    ]);
 })->with([
     'unsupported object' => ['O:8:"stdClass":0:{}', 'unsupported_object', 'Serialized objects are not supported.'],
     'encoding failure' => ['a:1:{s:5:"value";d:NAN;}', 'encoding_failed', 'Failed to encode the serialized data to JSON.'],
@@ -147,6 +163,12 @@ it('returns 415 when the request content type is not JSON', function () {
                 'message' => 'Content-Type must be application/json.',
             ],
         ]);
+
+    $this->assertDatabaseHas('conversion_metrics', [
+        'interface' => 'api',
+        'outcome' => 'unsupported_media_type',
+        'count' => 1,
+    ]);
 });
 
 it('returns 429 with retry guidance after ten requests from one IP', function () {
@@ -159,6 +181,12 @@ it('returns 429 with retry guidance after ten requests from one IP', function ()
         ->assertHeader('Retry-After')
         ->assertJsonPath('error.code', 'rate_limited')
         ->assertJsonPath('error.message', 'Too many conversion attempts. Try again later.');
+
+    $this->assertDatabaseHas('conversion_metrics', [
+        'interface' => 'api',
+        'outcome' => 'rate_limited',
+        'count' => 1,
+    ]);
 });
 
 it('publishes the OpenAPI contract from a stable URL', function () {

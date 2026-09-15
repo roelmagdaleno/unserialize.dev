@@ -51,6 +51,11 @@ it('displays a valid conversion without persisting it', function () {
         ->assertSee('This result is not retained by Unserialize.');
 
     $this->assertDatabaseCount('outputs', 0);
+    $this->assertDatabaseHas('conversion_metrics', [
+        'interface' => 'browser',
+        'outcome' => 'success',
+        'count' => 1,
+    ]);
 });
 
 it('shows specific feedback for serialized objects without persistence', function () {
@@ -78,6 +83,11 @@ it('blocks the eleventh conversion attempt for an IP address', function () {
         ->assertSee('Too many conversion attempts. Please try again in 60 seconds.');
 
     $this->assertDatabaseCount('outputs', 0);
+    $this->assertDatabaseHas('conversion_metrics', [
+        'interface' => 'browser',
+        'outcome' => 'rate_limited',
+        'count' => 1,
+    ]);
 });
 
 it('frames the broken part of the value and suggests a correction', function () {

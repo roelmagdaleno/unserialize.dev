@@ -21,6 +21,11 @@ test('the mcp tool converts serialized input without persistence', function () {
     ]);
 
     expect(Output::query()->count())->toBe(0);
+    $this->assertDatabaseHas('conversion_metrics', [
+        'interface' => 'mcp',
+        'outcome' => 'success',
+        'count' => 1,
+    ]);
 });
 
 test('the mcp tool exposes stable conversion errors', function (string $serialized, string $code) {

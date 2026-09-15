@@ -2,11 +2,15 @@
 
 use App\Enums\ConversionInterface;
 use App\Enums\SyntaxErrorCode;
+use App\Models\ConversionMetric;
 use App\Services\ConversionTelemetry;
+use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
-uses(TestCase::class);
+uses(TestCase::class, LazilyRefreshDatabase::class);
 
 /**
  * The diagnostic key is absent here, which is also what proves it is omitted
@@ -78,4 +82,117 @@ test('input sizes are recorded as buckets instead of exact values', function (in
 test('nightwatch cannot capture conversion request bodies', function () {
     expect(config('nightwatch.capture_request_payload'))->toBeFalse()
         ->and(config('nightwatch.redact_payload_fields'))->toContain('serialized', 'serializedData');
+});
+
+test('a first conversion creates one daily aggregate holding a single occurrence', function () {
+    $this->travelTo('2026-09-14 08:15:30');
+
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+
+    $this->assertDatabaseCount('conversion_metrics', 1);
+    $this->assertDatabaseHas('conversion_metrics', [
+        'date' => '2026-09-14',
+        'interface' => 'api',
+        'outcome' => 'success',
+        'count' => 1,
+        'last_occurred_at' => '2026-09-14 08:15:30',
+    ]);
+});
+
+test('a repeated conversion increments the same aggregate and advances its latest occurrence', function () {
+    $this->travelTo('2026-09-14 08:15:30');
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+
+    $this->travelTo('2026-09-14 19:45:00');
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 4096, hrtime(true));
+
+    $this->assertDatabaseCount('conversion_metrics', 1);
+    $this->assertDatabaseHas('conversion_metrics', [
+        'count' => 2,
+        'last_occurred_at' => '2026-09-14 19:45:00',
+    ]);
+});
+
+/**
+ * Writes can land out of order under concurrency, so the latest occurrence is
+ * resolved rather than overwritten. Without that the timestamp could move
+ * backwards and report the application as less recently used than it is.
+ */
+test('an occurrence recorded out of order does not move the latest occurrence backwards', function () {
+    $this->travelTo('2026-09-14 19:45:00');
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+
+    $this->travelTo('2026-09-14 08:15:30');
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+
+    $this->assertDatabaseHas('conversion_metrics', [
+        'count' => 2,
+        'last_occurred_at' => '2026-09-14 19:45:00',
+    ]);
+});
+
+test('a different day, interface, or outcome is counted as a separate aggregate', function () {
+    $this->travelTo('2026-09-14 08:15:30');
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+
+    $this->travelTo('2026-09-15 08:15:30');
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'invalid_input', 2048, hrtime(true));
+
+    $this->assertDatabaseCount('conversion_metrics', 4);
+    expect(ConversionMetric::query()->sum('count'))->toBe(4);
+});
+
+test('the aggregate key cannot hold two rows for the same day, interface, and outcome', function () {
+    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Api, 'success')->create();
+
+    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Api, 'success')->create();
+})->throws(QueryException::class);
+
+test('a durable aggregate stores only the allowed fields', function () {
+    app(ConversionTelemetry::class)->record(
+        ConversionInterface::Browser,
+        'invalid_input',
+        2048,
+        hrtime(true),
+        SyntaxErrorCode::StringLengthMismatch,
+    );
+
+    expect(array_keys(ConversionMetric::query()->sole()->getAttributes()))->toEqualCanonicalizing([
+        'id',
+        'date',
+        'interface',
+        'outcome',
+        'count',
+        'last_occurred_at',
+        'created_at',
+        'updated_at',
+    ]);
+});
+
+/**
+ * Metrics are best-effort: the conversion has already produced a result by the
+ * time the counter is written, so a failing write must stay a reported problem
+ * instead of becoming the caller's error.
+ */
+test('a failed metrics write is logged without failing the conversion', function () {
+    Log::spy();
+    Schema::drop('conversion_metrics');
+
+    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, 'success', 2048, hrtime(true));
+
+    Log::shouldHaveReceived('info')->once()->withArgs(
+        fn (string $message): bool => $message === 'conversion.completed',
+    );
+    Log::shouldHaveReceived('warning')->once()->withArgs(function (string $message, array $context): bool {
+        expect($message)->toBe('conversion.metrics_write_failed')
+            ->and($context)->toBe([
+                'interface' => 'mcp',
+                'outcome' => 'success',
+                'exception' => QueryException::class,
+            ]);
+
+        return true;
+    });
 });
