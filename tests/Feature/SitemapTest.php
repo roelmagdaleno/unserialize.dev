@@ -25,6 +25,7 @@ it('publishes concise agent discovery with canonical documentation only', functi
         ->assertHeader('Cache-Control', 'max-age=3600, public')
         ->assertSee('https://unserialize.dev/developers', false)
         ->assertSee('https://unserialize.dev/openapi.json', false)
+        ->assertSee('Accept: text/markdown', false)
         ->assertDontSee('/o/', false);
 });
 

@@ -2,6 +2,8 @@
 
 > A stateless PHP serialized-data to JSON converter. Serialized objects are rejected and input is limited to 262,144 bytes.
 
+The HTML pages below (/, /privacy, /developers) also serve a Markdown representation: send `Accept: text/markdown` and the page is returned as Markdown instead of HTML.
+
 ## Documentation
 
 - https://unserialize.dev/: Browser converter, PHP serialization format, WordPress workflow, and security guidance

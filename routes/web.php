@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AddLegacyOutputNoIndexHeader;
+use App\Http\Middleware\NegotiateMarkdownRepresentation;
 use App\Livewire\Output;
 use App\Livewire\Serialized;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,7 @@ $pageUrl = fn (string $path): string => $path === '/' ? url('/').'/' : url($path
 
 Route::get('/', Serialized::class)
     ->name('home')
+    ->middleware(NegotiateMarkdownRepresentation::class.':markdown.home')
     ->withHead(
         title: 'PHP Unserialize to JSON Converter',
         description: Serialized::META_DESCRIPTION,
@@ -24,6 +26,7 @@ Route::get('/', Serialized::class)
 
 Route::view('/privacy', 'privacy')
     ->name('privacy')
+    ->middleware(NegotiateMarkdownRepresentation::class.':markdown.privacy')
     ->withHead(
         title: 'Privacy and Retention',
         description: 'Learn how Unserialize processes PHP serialized data, and protects submitted values.',
@@ -33,6 +36,7 @@ Route::view('/privacy', 'privacy')
 
 Route::view('/developers', 'developers')
     ->name('developers')
+    ->middleware(NegotiateMarkdownRepresentation::class.':markdown.developers')
     ->withHead(
         title: 'API and MCP Developer Guide',
         description: 'Integrate the stateless PHP serialized-data converter through its versioned JSON API or read-only MCP tool.',
