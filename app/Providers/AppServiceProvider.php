@@ -119,8 +119,6 @@ class AppServiceProvider extends ServiceProvider
             ->og(type: OgType::Website, siteName: 'Unserialize')
             ->ogImage(asset('images/social.png'), alt: 'Unserialize', width: 2400, height: 1200, type: ImageType::Png)
             ->twitter(card: TwitterCard::SummaryWithLargeImage, site: '@roelmagdaleno', creator: '@roelmagdaleno')
-            ->preconnect('https://www.googletagmanager.com')
-            ->preconnect('https://www.google-analytics.com')
             ->preconnect('https://fonts.bunny.net'));
     }
 }
