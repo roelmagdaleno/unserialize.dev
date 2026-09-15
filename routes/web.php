@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AddDiscoveryLinkHeaders;
 use App\Http\Middleware\AddLegacyOutputNoIndexHeader;
 use App\Http\Middleware\NegotiateMarkdownRepresentation;
 use App\Livewire\Output;
@@ -16,7 +17,10 @@ $pageUrl = fn (string $path): string => $path === '/' ? url('/').'/' : url($path
 
 Route::get('/', Serialized::class)
     ->name('home')
-    ->middleware(NegotiateMarkdownRepresentation::class.':markdown.home')
+    ->middleware([
+        AddDiscoveryLinkHeaders::class,
+        NegotiateMarkdownRepresentation::class.':markdown.home',
+    ])
     ->withHead(
         title: 'PHP Unserialize to JSON Converter',
         description: Serialized::META_DESCRIPTION,
