@@ -110,10 +110,10 @@ Route::get('/.well-known/api-catalog', function () {
 })->name('api-catalog');
 
 Route::get('/llms.txt', fn () => response(
-    file_get_contents(public_path('llms.txt')),
+    file_get_contents(resource_path('llms.txt')),
     200,
     [
-        'Content-Type' => 'text/plain; charset=UTF-8',
+        'Content-Type' => 'text/markdown; charset=UTF-8',
         'Cache-Control' => 'public, max-age=3600',
     ],
 ))->name('llms');

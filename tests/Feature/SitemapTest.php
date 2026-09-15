@@ -21,7 +21,7 @@ it('lists only canonical public pages in the XML sitemap', function () {
 it('publishes concise agent discovery with canonical documentation only', function () {
     $this->get(route('llms'))
         ->assertOk()
-        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+        ->assertHeader('Content-Type', 'text/markdown; charset=UTF-8')
         ->assertHeader('Cache-Control', 'max-age=3600, public')
         ->assertSee('https://unserialize.dev/developers', false)
         ->assertSee('https://unserialize.dev/openapi.json', false)

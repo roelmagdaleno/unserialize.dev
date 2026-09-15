@@ -43,7 +43,7 @@ class AddDiscoveryLinkHeaders
             $this->link(route('api-catalog', absolute: false), 'api-catalog', 'application/linkset+json'),
             $this->link(route('openapi', absolute: false), 'service-desc', 'application/openapi+json'),
             $this->link(route('developers', absolute: false), 'service-doc', 'text/html'),
-            $this->link(route('llms', absolute: false), 'describedby', 'text/plain'),
+            $this->link(route('llms', absolute: false), 'describedby', 'text/markdown'),
         ];
     }
 
