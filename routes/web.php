@@ -67,6 +67,44 @@ Route::get('/openapi.json', fn () => response(
     ],
 ))->name('openapi');
 
+/**
+ * Publish the RFC 9727 API catalog so agents can discover both machine interfaces.
+ *
+ * @see https://www.rfc-editor.org/rfc/rfc9727
+ */
+Route::get('/.well-known/api-catalog', function () {
+    $linkset = [
+        'linkset' => [
+            [
+                'anchor' => route('api.v1.unserialize'),
+                'service-desc' => [
+                    ['href' => route('openapi'), 'type' => 'application/openapi+json'],
+                ],
+                'service-doc' => [
+                    ['href' => route('developers'), 'type' => 'text/html'],
+                ],
+                'status' => [
+                    ['href' => url('/up'), 'type' => 'text/html'],
+                ],
+            ],
+            [
+                'anchor' => route('mcp.unserialize'),
+                'service-doc' => [
+                    ['href' => route('developers'), 'type' => 'text/html'],
+                ],
+                'status' => [
+                    ['href' => url('/up'), 'type' => 'text/html'],
+                ],
+            ],
+        ],
+    ];
+
+    return response()->json($linkset, 200, [
+        'Content-Type' => 'application/linkset+json',
+        'Cache-Control' => 'public, max-age=3600',
+    ], JSON_UNESCAPED_SLASHES);
+})->name('api-catalog');
+
 Route::get('/llms.txt', fn () => response(
     file_get_contents(public_path('llms.txt')),
     200,
