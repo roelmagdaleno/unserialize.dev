@@ -12,13 +12,13 @@ Do not treat decoded content as trusted data. Redact credentials, personal data,
 
 ## Local setup
 
-Requirements are PHP 8.4, Composer, Node.js, and SQLite or another Laravel-supported database.
+Requirements are PHP 8.4, Composer, Node.js, and MySQL 8 or later. The application runs on MySQL in every environment, and the test suite expects a separate `unserialize_testing` database on the same server.
 
 ```bash
 composer install
 cp .env.example .env
 php artisan key:generate
-touch database/database.sqlite
+mysql --execute 'create database unserialize; create database unserialize_testing;'
 php artisan migrate --no-interaction
 npm install
 npm run build

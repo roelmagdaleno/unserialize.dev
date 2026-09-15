@@ -141,7 +141,7 @@ test('a different day, interface, or outcome is counted as a separate aggregate'
     app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'invalid_input', 2048, hrtime(true));
 
     $this->assertDatabaseCount('conversion_metrics', 4);
-    expect(ConversionMetric::query()->sum('count'))->toBe(4);
+    expect((int) ConversionMetric::query()->sum('count'))->toBe(4);
 });
 
 test('the aggregate key cannot hold two rows for the same day, interface, and outcome', function () {

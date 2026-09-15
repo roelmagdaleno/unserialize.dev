@@ -32,14 +32,6 @@ class ConversionMetric extends Model
 
     /**
      * Count one conversion against its daily aggregate.
-     *
-     * The insert and the increment are one statement so concurrent requests
-     * cannot lose a count: the composite unique index decides which request
-     * inserts and which one increments, and no application-level read sits
-     * between the two. `last_occurred_at` is resolved with `max()` rather than
-     * overwritten so a write that lands out of order cannot move the timestamp
-     * backwards. The conflict expression is SQLite's UPSERT syntax, where an
-     * unqualified column is the stored row and `excluded` is the rejected one.
      */
     public static function recordOccurrence(
         ConversionInterface $interface,
@@ -55,8 +47,8 @@ class ConversionMetric extends Model
             'count' => 1,
             'last_occurred_at' => $occurredAt,
         ]], ['date', 'interface', 'outcome'], [
-            'count' => DB::raw('"count" + 1'),
-            'last_occurred_at' => DB::raw('max("last_occurred_at", "excluded"."last_occurred_at")'),
+            'count' => DB::raw('`count` + 1'),
+            'last_occurred_at' => DB::raw('greatest(`last_occurred_at`, values(`last_occurred_at`))'),
         ]);
     }
 

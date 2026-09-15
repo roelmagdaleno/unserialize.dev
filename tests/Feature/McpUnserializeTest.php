@@ -134,7 +134,7 @@ test('the mcp transport accepts the configured origin', function () {
         ->assertJsonPath('result.serverInfo.name', 'Unserialize Server');
 });
 
-test('rate limiting is isolated from the sqlite application database', function () {
+test('rate limiting is isolated from the application database', function () {
     expect(config('cache.limiter'))->toBe('array')
         ->and(file_get_contents(base_path('.env.example')))->toContain('CACHE_LIMITER=file');
 });
