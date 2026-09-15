@@ -14,8 +14,7 @@ it('explains stateless processing and legacy output retention', function () {
 
 it('summarizes privacy beside the converter', function () {
     $this->get(route('home'))
-        ->assertSee('Your input is sent to this server for conversion')
-        ->assertSee('not stored or logged')
+        ->assertSee('Processed in memory, not stored or logged')
         ->assertSee('262,144 bytes')
         ->assertSee(route('privacy'));
 });

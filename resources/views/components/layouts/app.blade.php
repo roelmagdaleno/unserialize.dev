@@ -50,7 +50,6 @@
         <footer>
             <p class="mt-8 text-sm text-gray-700 dark:text-gray-300">
                 Built with ❤️ by <a href="https://github.com/roelmagdaleno" class="text-blue-900 dark:text-blue-300">Roel</a>.
-                Source on <a href="https://github.com/roelmagdaleno/unserialize" class="text-blue-900 dark:text-blue-300">GitHub</a>.
                 <a href="{{ route('privacy') }}" class="text-blue-900 dark:text-blue-300">Privacy</a>.
                 <a href="{{ route('developers') }}" class="text-blue-900 dark:text-blue-300">API and MCP documentation</a>.
             </p>

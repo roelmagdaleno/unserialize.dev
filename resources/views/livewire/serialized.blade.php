@@ -1,13 +1,22 @@
 <div>
 <section class="mt-8">
     <form wire:submit="unserialize">
-        <flux:textarea
-            label="Serialized Data"
-            wire:model="form.serializedData"
-            rows="auto"
-            class="font-mono text-sm md:text-base"
-            autofocus="autofocus"
-        />
+        <flux:field>
+            <flux:label>Serialized Data</flux:label>
+
+            <flux:textarea
+                wire:model="form.serializedData"
+                rows="auto"
+                class="font-mono text-sm md:text-base"
+                autofocus="autofocus"
+            />
+
+            <flux:error name="form.serializedData" />
+
+            <flux:description>
+                Processed in memory, not stored or logged. Max 262,144 bytes. <a class="underline hover:text-zinc-700 dark:hover:text-zinc-200" href="{{ route('privacy') }}">Privacy details</a>.
+            </flux:description>
+        </flux:field>
 
         <div class="mt-6 flex justify-end">
             <flux:button type="submit" class="w-full md:w-auto" variant="primary">Unserialize</flux:button>
@@ -51,11 +60,6 @@
             </div>
         </section>
     @endif
-
-    <p class="mt-4 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-        Your input is sent to this server for conversion, processed in memory, and not stored or logged.
-        The maximum input size is 262,144 bytes. <a class="font-medium text-blue-800 underline dark:text-blue-300" href="{{ route('privacy') }}">Read the privacy details</a>.
-    </p>
 
     @if ($result !== null)
         <section class="mt-8" aria-labelledby="conversion-result">
