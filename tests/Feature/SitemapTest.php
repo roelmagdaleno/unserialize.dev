@@ -35,3 +35,12 @@ it('advertises the sitemap without blocking legacy output crawling', function ()
         ->assertSee('Sitemap: https://unserialize.dev/sitemap.xml')
         ->assertDontSee('Disallow: /o/');
 });
+
+it('declares content signal preferences in robots.txt', function () {
+    $this->get(route('robots'))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+        ->assertSee('Content-Signal: ai-train=no, search=yes, ai-input=yes', false)
+        ->assertSee('User-agent: *', false)
+        ->assertSee('Sitemap: https://unserialize.dev/sitemap.xml', false);
+});

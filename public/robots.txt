@@ -1,4 +1,14 @@
+# Content signals declare how this site's content may be used after access.
+# See https://contentsignals.org for the full specification.
+#
+#   search:   building a search index and surfacing links in results
+#   ai-input: using content as input to an AI-generated answer, with attribution
+#   ai-train: using content to train or fine-tune a generative AI model
+#
+# "yes" permits the use, "no" reserves the publisher's rights against it.
+
 User-agent: *
+Content-Signal: ai-train=no, search=yes, ai-input=yes
 Allow: /
 
 Sitemap: https://unserialize.dev/sitemap.xml

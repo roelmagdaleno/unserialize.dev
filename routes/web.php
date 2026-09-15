@@ -46,9 +46,13 @@ Route::get('/sitemap.xml', function () {
         ->header('Content-Type', 'application/xml');
 })->name('sitemap');
 
-Route::get('/robots.txt', fn () => response("User-agent: *\nAllow: /\n\nSitemap: https://unserialize.dev/sitemap.xml\n", 200, [
-    'Content-Type' => 'text/plain',
-]));
+Route::get('/robots.txt', fn () => response(
+    file_get_contents(public_path('robots.txt')),
+    200,
+    [
+        'Content-Type' => 'text/plain',
+    ],
+))->name('robots');
 
 Route::get('/openapi.json', fn () => response(
     file_get_contents(public_path('openapi.json')),
