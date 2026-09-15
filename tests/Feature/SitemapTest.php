@@ -4,7 +4,7 @@ it('lists only canonical public pages in the XML sitemap', function () {
     $response = $this->get(route('sitemap'));
 
     $response
-        ->assertHeader('Content-Type', 'application/xml')
+        ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
         ->assertSee(route('home'), false)
         ->assertSee(route('privacy'), false)
         ->assertSee(route('developers'), false)

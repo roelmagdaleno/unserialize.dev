@@ -51,7 +51,7 @@ Route::view('/developers', 'developers')
 Route::get('/sitemap.xml', function () {
     return response()
         ->view('sitemap')
-        ->header('Content-Type', 'application/xml');
+        ->header('Content-Type', 'application/xml; charset=UTF-8');
 })->name('sitemap');
 
 Route::get('/robots.txt', fn () => response(
