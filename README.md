@@ -60,6 +60,6 @@ Every conversion emits a `conversion.completed` event with only `interface`, `ou
 
 ## Security and license
 
-Report vulnerabilities privately to [roelmagdaleno@gmail.com](mailto:roelmagdaleno@gmail.com). Source and issue tracking live at [github.com/roelmagdaleno/unserialize](https://github.com/roelmagdaleno/unserialize).
+Report vulnerabilities privately to [roelmagdaleno@gmail.com](mailto:roelmagdaleno@gmail.com).
 
 Unserialize is open-source software licensed under the [MIT license](LICENSE).

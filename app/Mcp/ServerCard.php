@@ -63,10 +63,6 @@ class ServerCard
             'description' => self::DESCRIPTION,
             'version' => UnserializeServer::VERSION,
             'websiteUrl' => route('developers'),
-            'repository' => [
-                'source' => 'github',
-                'url' => 'https://github.com/roelmagdaleno/unserialize',
-            ],
             'remotes' => [$this->remote()],
             'serverInfo' => [
                 'name' => UnserializeServer::NAME,

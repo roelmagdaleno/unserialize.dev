@@ -95,3 +95,13 @@ test('the public card exposes no credentials or private conversion paths', funct
         ->and(strtolower($body))->not->toContain('token')
         ->and(strtolower($body))->not->toContain('password');
 });
+
+/**
+ * The source repository is not public yet, so the card must not advertise it.
+ */
+test('the card does not advertise a source repository', function () {
+    $response = $this->get('/.well-known/mcp/server-card.json')->assertOk();
+
+    expect($response->json())->not->toHaveKey('repository')
+        ->and(strtolower($response->getContent()))->not->toContain('github');
+});

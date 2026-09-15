@@ -10,7 +10,3 @@ The HTML pages below (/, /privacy, /developers) also serve a Markdown representa
 - https://unserialize.dev/privacy: Privacy and retention contract
 - https://unserialize.dev/developers: HTTP API and MCP integration guide
 - https://unserialize.dev/openapi.json: OpenAPI 3.1 description
-
-## Source
-
-- https://github.com/roelmagdaleno/unserialize
