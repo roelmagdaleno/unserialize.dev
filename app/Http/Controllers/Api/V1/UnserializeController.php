@@ -33,7 +33,7 @@ class UnserializeController extends Controller
         $serialized = $request->string('serialized')->toString();
 
         try {
-            $result = (new Serialized($serialized))->convert();
+            $result = new Serialized($serialized)->convert();
         } catch (ConversionException $exception) {
             $status = $exception->errorCode === ConversionErrorCode::InputTooLarge ? 413 : 422;
 

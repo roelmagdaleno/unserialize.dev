@@ -2,10 +2,10 @@
 
 namespace App\Data;
 
-class ConversionResult
+readonly class ConversionResult
 {
     public function __construct(
-        public readonly mixed $value,
-        public readonly string $json,
+        public mixed $value,
+        public string $json,
     ) {}
 }

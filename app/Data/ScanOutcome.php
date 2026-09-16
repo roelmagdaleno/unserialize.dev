@@ -4,12 +4,12 @@ namespace App\Data;
 
 use App\Enums\ScanVerdict;
 
-class ScanOutcome
+readonly class ScanOutcome
 {
     public function __construct(
-        public readonly ScanVerdict $verdict,
-        public readonly ?SyntaxDiagnostic $diagnostic = null,
-        public readonly int $consumedBytes = 0,
+        public ScanVerdict $verdict,
+        public ?SyntaxDiagnostic $diagnostic = null,
+        public int $consumedBytes = 0,
     ) {}
 
     public static function valid(int $consumedBytes): self

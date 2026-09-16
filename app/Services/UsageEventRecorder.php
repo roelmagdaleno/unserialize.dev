@@ -18,9 +18,9 @@ use Throwable;
  * caller-supplied array, so the set of things this application can store is the
  * set of properties written here and nothing a future caller adds.
  */
-class UsageEventRecorder
+readonly class UsageEventRecorder
 {
-    public function __construct(private readonly UsageMetadataNormalizer $normalizer) {}
+    public function __construct(private UsageMetadataNormalizer $normalizer) {}
 
     /**
      * Record one event.

@@ -79,6 +79,6 @@ class ValidateMcpRequestOrigin
             return null;
         }
 
-        return "{$scheme}://{$host}:{$port}";
+        return "$scheme://$host:$port";
     }
 }

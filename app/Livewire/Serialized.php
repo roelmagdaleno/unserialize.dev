@@ -139,13 +139,13 @@ class Serialized extends Component
             $seconds = RateLimiter::availableIn($rateLimitKey);
             $this->addError(
                 'form.serializedData',
-                "Too many conversion attempts. Please try again in {$seconds} seconds.",
+                "Too many conversion attempts. Please try again in $seconds seconds.",
             );
 
             return;
         }
 
-        RateLimiter::hit($rateLimitKey, 60);
+        RateLimiter::hit($rateLimitKey);
 
         try {
             $conversion = $this->form->submit();

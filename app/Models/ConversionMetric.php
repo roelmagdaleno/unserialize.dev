@@ -20,7 +20,7 @@ class ConversionMetric extends Model
 {
     use HasFactory;
 
-    public const OUTCOME_SUCCESS = 'success';
+    public const string OUTCOME_SUCCESS = 'success';
 
     protected $fillable = [
         'date',

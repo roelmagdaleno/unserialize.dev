@@ -11,9 +11,9 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-class ConversionTelemetry
+readonly class ConversionTelemetry
 {
-    public function __construct(private readonly UsageEventRecorder $recorder) {}
+    public function __construct(private UsageEventRecorder $recorder) {}
 
     /**
      * Record one conversion.

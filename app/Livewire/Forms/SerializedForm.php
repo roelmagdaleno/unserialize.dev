@@ -24,7 +24,7 @@ class SerializedForm extends Form
     {
         $this->validate();
 
-        return (new Serialized($this->serializedData))->convert();
+        return new Serialized($this->serializedData)->convert();
     }
 
     /**

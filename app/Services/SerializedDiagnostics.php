@@ -18,9 +18,9 @@ use App\Enums\SyntaxErrorCode;
  * softened. That ordering is what makes the promise "the byte PHP blames always
  * falls inside the region shown to the user" hold for every input.
  */
-class SerializedDiagnostics
+readonly class SerializedDiagnostics
 {
-    public function __construct(private readonly SerializedScanner $scanner) {}
+    public function __construct(private SerializedScanner $scanner) {}
 
     /**
      * Produce one diagnostic for a payload PHP has already rejected.

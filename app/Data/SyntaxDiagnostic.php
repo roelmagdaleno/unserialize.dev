@@ -14,7 +14,7 @@ use App\Services\SerializedDiagnostics;
  * what lets both strings travel out through the HTTP API and the MCP tool
  * without contradicting the promise that submitted data is not returned.
  */
-class SyntaxDiagnostic
+readonly class SyntaxDiagnostic
 {
     /**
      * @param  int  $offset  Byte offset of the highlighted region.
@@ -24,16 +24,16 @@ class SyntaxDiagnostic
      * @param  array{offset: int, length: int, replacement: string}|null  $fix  Candidate byte edit, verified before `suggestion` is published.
      */
     public function __construct(
-        public readonly SyntaxErrorCode $code,
-        public readonly int $offset,
-        public readonly int $length,
-        public readonly string $message,
-        public readonly ?string $suggestion = null,
-        public readonly int $contextStart = 0,
-        public readonly ?int $expectedTerminatorOffset = null,
-        public readonly ?array $fix = null,
-        public readonly ?int $engineOffset = null,
-        public readonly DiagnosticConfidence $confidence = DiagnosticConfidence::Exact,
+        public SyntaxErrorCode $code,
+        public int $offset,
+        public int $length,
+        public string $message,
+        public ?string $suggestion = null,
+        public int $contextStart = 0,
+        public ?int $expectedTerminatorOffset = null,
+        public ?array $fix = null,
+        public ?int $engineOffset = null,
+        public DiagnosticConfidence $confidence = DiagnosticConfidence::Exact,
     ) {}
 
     /**

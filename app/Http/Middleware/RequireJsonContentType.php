@@ -10,9 +10,9 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class RequireJsonContentType
+readonly class RequireJsonContentType
 {
-    public function __construct(private readonly ConversionTelemetry $telemetry) {}
+    public function __construct(private ConversionTelemetry $telemetry) {}
 
     /**
      * Handle an incoming request.

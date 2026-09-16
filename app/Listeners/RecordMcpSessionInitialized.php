@@ -17,9 +17,9 @@ use Laravel\Mcp\Events\SessionInitialized;
  * arbitrary caller-supplied values this capability has no use for. Initialization
  * is the authoritative protocol-version event, so tool calls record none.
  */
-class RecordMcpSessionInitialized
+readonly class RecordMcpSessionInitialized
 {
-    public function __construct(private readonly UsageEventRecorder $recorder) {}
+    public function __construct(private UsageEventRecorder $recorder) {}
 
     public function handle(SessionInitialized $event): void
     {

@@ -94,7 +94,7 @@ class ConvertSerializedDataTool extends Tool
         }
 
         try {
-            $result = (new Serialized($arguments['serialized']))->convert();
+            $result = new Serialized($arguments['serialized'])->convert();
         } catch (ConversionException $exception) {
             $telemetry->record(
                 ConversionInterface::Mcp,

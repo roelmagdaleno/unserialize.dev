@@ -17,12 +17,12 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class NegotiateMarkdownRepresentation
 {
-    private const MEDIA_TYPE = 'text/markdown';
+    private const string MEDIA_TYPE = 'text/markdown';
 
     /**
      * Bytes per token used to estimate the `X-Markdown-Tokens` count.
      */
-    private const BYTES_PER_TOKEN = 4;
+    private const int BYTES_PER_TOKEN = 4;
 
     /**
      * Handle an incoming request.
