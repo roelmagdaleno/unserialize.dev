@@ -12,8 +12,15 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Refuse an API conversion that does not declare a JSON body, and count the
+ * refusal like any other outcome.
+ */
 readonly class RequireJsonContentType
 {
+    /**
+     * Records the refusal as an `unsupported_media_type` outcome.
+     */
     public function __construct(private ConversionTelemetry $telemetry) {}
 
     /**

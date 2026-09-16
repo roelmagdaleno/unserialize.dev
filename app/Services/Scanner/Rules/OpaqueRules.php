@@ -17,6 +17,9 @@ use App\Services\Scanner\TokenReader;
  */
 readonly class OpaqueRules
 {
+    /**
+     * @param  StringRules  $strings  Reads the quoted class and case names these tokens carry.
+     */
     public function __construct(
         private TokenReader $reader,
         private StringRules $strings,

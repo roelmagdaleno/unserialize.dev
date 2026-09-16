@@ -17,6 +17,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class NegotiateMarkdownRepresentation
 {
+    /**
+     * The representation this middleware can serve instead of HTML.
+     */
     private const string MEDIA_TYPE = 'text/markdown';
 
     /**

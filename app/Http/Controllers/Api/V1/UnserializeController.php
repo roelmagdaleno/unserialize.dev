@@ -14,6 +14,9 @@ use App\Services\ConversionTelemetry;
 use App\Services\Serialized;
 use Illuminate\Http\JsonResponse;
 
+/**
+ * Converts one serialized payload for the public HTTP API.
+ */
 class UnserializeController extends Controller
 {
     /**

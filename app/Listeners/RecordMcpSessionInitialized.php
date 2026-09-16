@@ -19,8 +19,14 @@ use Laravel\Mcp\Events\SessionInitialized;
  */
 readonly class RecordMcpSessionInitialized
 {
+    /**
+     * Persists the resulting usage event.
+     */
     public function __construct(private UsageEventRecorder $recorder) {}
 
+    /**
+     * Record the negotiated protocol version as a usage event.
+     */
     public function handle(SessionInitialized $event): void
     {
         $this->recorder->record(

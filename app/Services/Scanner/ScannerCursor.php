@@ -8,20 +8,13 @@ use App\Services\Scanner\Rules\ContainerRules;
  * The scanner's position inside one payload, plus the byte-level reads every
  * grammar rule needs.
  *
- * Every grammar rule used to thread `string $data, int $length, int &$position`
- * by hand, which put a by-reference parameter in front of the reader on every
- * signature and made it impossible to tell at a glance which rules advance the
- * cursor and which only look. One mutable object carries the same state without
- * the ceremony.
- *
- * The digit readers live here rather than on a rule family because they decide
- * nothing about the grammar: they consume bytes and report what they saw. Every
- * family needs them, and a family that had to own them would either duplicate
- * them or force a shared base class.
- *
- * The properties are public and there are no accessors on purpose: the per-byte
- * loops hoist them into locals and write back once, and a getter in that
- * position would cost a method call per byte on a 256 KB payload.
+ * - The digit readers live here rather than on a rule family because they
+ *   decide nothing about the grammar: they consume bytes and report what they
+ *   saw. Every family needs them, and a family owning them would either
+ *   duplicate them or force a shared base class.
+ * - The properties are public and there are no accessors on purpose: the
+ *   per-byte loops hoist them into locals and write back once, and a getter in
+ *   that position would cost a method call per byte on a 256 KB payload.
  */
 class ScannerCursor
 {
@@ -30,6 +23,9 @@ class ScannerCursor
      */
     private const int MAX_LENGTH_DIGITS = 18;
 
+    /**
+     * The byte the next read starts at.
+     */
     public int $position = 0;
 
     /**
@@ -39,16 +35,26 @@ class ScannerCursor
      */
     public bool $unverifiable = false;
 
+    /**
+     * @param  string  $data  The whole payload being scanned.
+     * @param  int  $length  Its byte length, read once rather than per loop.
+     */
     public function __construct(
         public readonly string $data,
         public readonly int $length,
     ) {}
 
+    /**
+     * Whether every byte has been consumed.
+     */
     public function atEnd(): bool
     {
         return $this->position >= $this->length;
     }
 
+    /**
+     * The byte sitting at the cursor.
+     */
     public function current(): string
     {
         return $this->data[$this->position];
@@ -147,8 +153,7 @@ class ScannerCursor
      * where the surplus began -- and must not publish `unverifiable`, since a
      * reference or custom object inside the surplus says nothing about whether
      * the payload as a whole could be verified. Writes to a fork are discarded
-     * by design; that discard used to be implicit in passing `$position` and
-     * `$unverifiable` by value, and this method is what keeps it visible.
+     * by design.
      */
     public function fork(): self
     {

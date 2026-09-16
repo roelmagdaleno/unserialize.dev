@@ -14,6 +14,9 @@ use Illuminate\Http\Request;
  */
 readonly class UsageContext
 {
+    /**
+     * Every field is optional: a surface supplies only what it observed.
+     */
     public function __construct(
         public ?string $userAgent = null,
         public ?string $requestUrl = null,

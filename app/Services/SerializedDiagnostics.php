@@ -20,6 +20,9 @@ use App\Enums\SyntaxErrorCode;
  */
 readonly class SerializedDiagnostics
 {
+    /**
+     * Supplies the explanation PHP cannot give, and verifies suggested fixes.
+     */
     public function __construct(private SerializedScanner $scanner) {}
 
     /**
@@ -144,6 +147,9 @@ readonly class SerializedDiagnostics
             : $diagnostic;
     }
 
+    /**
+     * Force an offset inside the payload.
+     */
     private function clampOffset(int $offset, int $length): int
     {
         return max(0, min($offset, $length));

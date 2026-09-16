@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\ServerCard;
 use App\Mcp\Tools\ConvertSerializedDataTool;
 use Laravel\Mcp\Server;
 use Laravel\Mcp\Server\Attributes\Instructions;
@@ -13,6 +14,12 @@ use Laravel\Mcp\Server\Tool;
 #[Name(UnserializeServer::NAME)]
 #[Version(UnserializeServer::VERSION)]
 #[Instructions('Convert untrusted PHP serialized values to structured JSON. Inputs are limited to 262144 bytes, objects are rejected, and conversions are not retained.')]
+/**
+ * The MCP server exposing this application's single conversion tool.
+ *
+ * The primitive lists are public constants so {@see ServerCard} can
+ * describe the same surface the live handshake reports.
+ */
 class UnserializeServer extends Server
 {
     /**
@@ -51,9 +58,18 @@ class UnserializeServer extends Server
      */
     public const array PROMPTS = [];
 
+    /**
+     * @var list<class-string<Tool>>
+     */
     protected array $tools = self::TOOLS;
 
+    /**
+     * @var list<class-string<Server\Resource>>
+     */
     protected array $resources = self::RESOURCES;
 
+    /**
+     * @var list<class-string<Prompt>>
+     */
     protected array $prompts = self::PROMPTS;
 }

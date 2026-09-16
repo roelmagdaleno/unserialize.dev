@@ -19,6 +19,9 @@ use Laravel\Head\HeadBuilder;
 use Laravel\Nightwatch\Facades\Nightwatch;
 use Laravel\Nightwatch\Records\Request as NightwatchRequest;
 
+/**
+ * Wires the application's head metadata and per-client conversion limits.
+ */
 class AppServiceProvider extends ServiceProvider
 {
     /**

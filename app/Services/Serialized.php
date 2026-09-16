@@ -12,8 +12,19 @@ use JsonException;
 use ReflectionReference;
 use Throwable;
 
+/**
+ * Converts one serialized payload, and explains it when it cannot.
+ *
+ * Decoding happens at most once per instance: the decoded value or the failure
+ * that stopped it is kept, so repeated calls never re-run `unserialize()` and a
+ * second scan. Objects are refused rather than restored, so no class from the
+ * payload is ever instantiated.
+ */
 class Serialized
 {
+    /**
+     * The largest payload accepted, in bytes.
+     */
     public const int MAX_INPUT_BYTES = 262144;
 
     /**
@@ -26,8 +37,14 @@ class Serialized
      */
     public const int MAX_DEPTH = 512;
 
+    /**
+     * Whether `$decodedData` has been populated by a successful decode.
+     */
     private bool $hasDecoded = false;
 
+    /**
+     * The decoded value, valid only once `$hasDecoded` is true.
+     */
     private mixed $decodedData;
 
     /**
@@ -37,9 +54,8 @@ class Serialized
     private ?ConversionException $failure = null;
 
     /**
-     * Serialized constructor.
-     *
-     * @since 1.0.0
+     * @param  string  $serializedData  The payload to convert.
+     * @param  SerializedDiagnostics|null  $diagnostics  Built on demand when omitted.
      */
     public function __construct(
         public string $serializedData,
@@ -56,8 +72,6 @@ class Serialized
 
     /**
      * Output the serialized data as JSON.
-     *
-     * @since 1.0.0
      *
      * @throws ConversionException If the serialized data cannot be converted.
      */

@@ -9,15 +9,13 @@ use App\Services\Scanner\Rules\ScalarRules;
 use App\Services\Scanner\Rules\StringRules;
 
 /**
- * The type-marker dispatch table, and the only place the families meet.
- *
- * Splitting the grammar by family leaves one job that belongs to no family:
- * reading the marker byte and choosing who handles it. That is this class.
+ * The type-marker dispatch table: read the marker byte and choose the family
+ * that handles it.
  *
  * The families are built here rather than injected because
  * {@see ContainerRules} has to recurse back through {@see self::value()}, and
- * constructing them in this order is what resolves that cycle once, visibly,
- * instead of leaving every rule to receive a parser it might not need.
+ * constructing them in this order resolves that cycle once, visibly, instead of
+ * leaving every rule to receive a parser it might not need.
  */
 class ValueParser
 {
@@ -27,14 +25,29 @@ class ValueParser
      */
     public const int MAX_DEPTH = 1024;
 
+    /**
+     * The values with no length and no body: `N`, `b`, `i`, `d`.
+     */
     private readonly ScalarRules $scalars;
 
+    /**
+     * Everything written as `<length>:"<contents>"`.
+     */
     private readonly StringRules $strings;
 
+    /**
+     * The values that declare a count and hold other values: `a` and `O`.
+     */
     private readonly ContainerRules $containers;
 
+    /**
+     * The tokens validated for shape only: `C`, `E`, `r` and `R`.
+     */
     private readonly OpaqueRules $opaque;
 
+    /**
+     * @param  TokenReader  $reader  Shared by every family it builds.
+     */
     public function __construct(private readonly TokenReader $reader = new TokenReader)
     {
         $this->scalars = new ScalarRules($reader);

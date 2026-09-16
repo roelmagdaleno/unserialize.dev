@@ -15,8 +15,14 @@ use App\Services\Scanner\TokenReader;
  */
 readonly class ScalarRules
 {
+    /**
+     * @param  TokenReader  $reader  Supplies the shared byte expectation and the diagnostic factory.
+     */
     public function __construct(private TokenReader $reader) {}
 
+    /**
+     * Consume `N;`.
+     */
     public function nullValue(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
         $start = $cursor->position;
@@ -25,6 +31,9 @@ readonly class ScalarRules
         return $this->reader->terminator($cursor, $start);
     }
 
+    /**
+     * Consume `b:0;` or `b:1;`.
+     */
     public function boolean(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
         $start = $cursor->position;
@@ -49,6 +58,9 @@ readonly class ScalarRules
         return $this->reader->terminator($cursor, $start);
     }
 
+    /**
+     * Consume an optionally signed integer.
+     */
     public function integer(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
         $start = $cursor->position;
@@ -68,6 +80,9 @@ readonly class ScalarRules
         return $this->reader->terminator($cursor, $start);
     }
 
+    /**
+     * Consume a float, including the `INF`, `-INF` and `NAN` literals.
+     */
     public function double(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
         $start = $cursor->position;

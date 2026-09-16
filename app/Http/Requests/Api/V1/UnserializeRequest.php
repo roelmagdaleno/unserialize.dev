@@ -13,8 +13,18 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
+/**
+ * Validates an API conversion request against the published contract.
+ *
+ * Unknown fields are rejected rather than ignored, so a typo in a client is
+ * reported instead of silently converting nothing.
+ */
 class UnserializeRequest extends FormRequest
 {
+    /**
+     * `hrtime(true)` reading from when validation began, so a rejected request
+     * still reports a duration.
+     */
     private int $telemetryStartedAt;
 
     /**
@@ -76,6 +86,9 @@ class UnserializeRequest extends FormRequest
         ), 422));
     }
 
+    /**
+     * Start the clock before validation runs.
+     */
     protected function prepareForValidation(): void
     {
         $this->telemetryStartedAt = hrtime(true);

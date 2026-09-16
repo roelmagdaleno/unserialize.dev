@@ -22,13 +22,15 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * The home page converter: takes a payload, shows the JSON or explains the
+ * failure, and records the attempt.
+ */
 class Serialized extends Component
 {
     /**
      * The home page meta description, shared with the route metadata and the
      * structured data so both describe the converter the same way.
-     *
-     * @since 1.0.0
      */
     public const string META_DESCRIPTION = 'Convert PHP serialized data to readable JSON without storing your input. Includes tested mappings, limits, and object-safety guidance.';
 
@@ -42,12 +44,13 @@ class Serialized extends Component
     private const int TRANSPORT_STATUS = 200;
 
     /**
-     * The serialized form.
-     *
-     * @since 1.0.0
+     * The submitted payload and its validation rules.
      */
     public SerializedForm $form;
 
+    /**
+     * The JSON produced by the last successful conversion.
+     */
     public ?string $result = null;
 
     /**
@@ -80,12 +83,8 @@ class Serialized extends Component
     public ?array $diagnostic = null;
 
     /**
-     * Mount the component.
-     *
      * Publish the converter's structured data alongside the head metadata the
      * home route already declares.
-     *
-     * @since 1.0.0
      */
     public function mount(): void
     {
@@ -105,9 +104,8 @@ class Serialized extends Component
     }
 
     /**
-     * Start the unserialize process.
-     *
-     * @since 1.0.0
+     * Convert the submitted payload, or attach the diagnostic that explains why
+     * it could not be converted.
      */
     public function unserialize(
         Request $request,
@@ -213,9 +211,7 @@ class Serialized extends Component
     }
 
     /**
-     * Render the view.
-     *
-     * @since 1.0.0
+     * Render the converter page.
      */
     public function render(): View
     {

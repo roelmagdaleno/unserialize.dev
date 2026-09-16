@@ -7,25 +7,30 @@ use App\Data\SyntaxDiagnostic;
 /**
  * Turns a diagnostic into the bounded, display-safe shape the browser renders.
  *
- * Two jobs, both of which must happen here rather than in a view:
+ * Both jobs belong here rather than in a view:
  *
- * - Windowing. The input may be 262,144 bytes. Only a slice around the problem
- *   is carried into the page, so the rendered panel stays a fixed size no
- *   matter how large the submission was.
- * - Byte sanitizing. A serialized payload is bytes, not text, and its declared
- *   lengths are byte counts. Handing raw bytes to Blade would run them through
- *   `e()`, whose `ENT_SUBSTITUTE` flag silently replaces every invalid sequence
- *   with U+FFFD -- which would shift the highlighted span away from the byte
- *   offset the panel claims. Escaping those bytes here keeps the frame aligned
- *   with the number printed beside it.
+ * - Windowing. The input may be 262,144 bytes, so only a slice around the
+ *   problem reaches the page and the panel stays a fixed size.
+ * - Byte sanitizing. Handing raw payload bytes to Blade would run them through
+ *   `e()`, whose `ENT_SUBSTITUTE` flag replaces every invalid sequence with
+ *   U+FFFD and shifts the highlighted span away from the byte offset the panel
+ *   claims. Escaping here keeps the frame aligned with the number beside it.
  */
 class DiagnosticPresenter
 {
+    /**
+     * Bytes of context shown on each side of the highlighted span.
+     */
     public const int WINDOW_BYTES = 200;
 
+    /**
+     * Longest span rendered in full before its middle is elided.
+     */
     public const int MAX_SPAN_BYTES = 400;
 
     /**
+     * Render one diagnostic for the browser panel.
+     *
      * @return array{
      *     code: string,
      *     message: string,
@@ -62,6 +67,8 @@ class DiagnosticPresenter
     }
 
     /**
+     * Cut a bounded, sanitized window around the highlighted span.
+     *
      * @return array{
      *     before: string,
      *     span: string,

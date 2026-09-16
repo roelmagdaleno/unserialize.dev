@@ -20,6 +20,9 @@ class ConversionMetric extends Model
 {
     use HasFactory;
 
+    /**
+     * @var list<string>
+     */
     protected $fillable = [
         'date',
         'interface',

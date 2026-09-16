@@ -63,11 +63,18 @@ readonly class EngineOutcome
         EngineFailureKind::Opaque,
     ];
 
+    /**
+     * @param  EngineFailureKind  $kind  What PHP's diagnostics amount to.
+     * @param  int|null  $offset  Byte offset PHP blamed, when it reported one.
+     */
     public function __construct(
         public EngineFailureKind $kind,
         public ?int $offset = null,
     ) {}
 
+    /**
+     * Whether PHP rejected the payload.
+     */
     public function failed(): bool
     {
         return $this->kind !== EngineFailureKind::None;

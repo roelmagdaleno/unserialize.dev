@@ -18,6 +18,9 @@ use App\Services\Scanner\ValueParser;
  */
 readonly class ContainerRules
 {
+    /**
+     * @param  ValueParser  $parser  The dispatcher this family recurses back through.
+     */
     public function __construct(
         private TokenReader $reader,
         private ScalarRules $scalars,
@@ -25,6 +28,9 @@ readonly class ContainerRules
         private ValueParser $parser,
     ) {}
 
+    /**
+     * Consume a serialized array and check it against its declared count.
+     */
     public function arrayValue(ScannerCursor $cursor, int $depth): ?SyntaxDiagnostic
     {
         $start = $cursor->position;

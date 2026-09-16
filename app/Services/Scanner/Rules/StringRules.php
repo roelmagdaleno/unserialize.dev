@@ -17,8 +17,14 @@ use App\Services\Scanner\TokenReader;
  */
 readonly class StringRules
 {
+    /**
+     * @param  TokenReader  $reader  Supplies the shared byte expectation and the diagnostic factory.
+     */
     public function __construct(private TokenReader $reader) {}
 
+    /**
+     * Consume an `s:` or, when `$escaped`, an `S:` string.
+     */
     public function string(ScannerCursor $cursor, bool $escaped): ?SyntaxDiagnostic
     {
         $start = $cursor->position;

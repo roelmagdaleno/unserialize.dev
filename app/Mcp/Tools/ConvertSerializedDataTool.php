@@ -33,6 +33,12 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 #[IsIdempotent]
 #[IsDestructive(false)]
 #[IsOpenWorld(false)]
+/**
+ * Converts one serialized payload for MCP clients.
+ *
+ * Both schemas are closed to additional properties, so a client that sends an
+ * unexpected field is told rather than having it ignored.
+ */
 class ConvertSerializedDataTool extends Tool
 {
     /**
@@ -51,6 +57,8 @@ class ConvertSerializedDataTool extends Tool
     public const string TRANSPORT = 'http';
 
     /**
+     * The tool definition, with both schemas closed to unknown properties.
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -62,6 +70,10 @@ class ConvertSerializedDataTool extends Tool
         return $tool;
     }
 
+    /**
+     * Convert the submitted payload, or answer with the error that explains why
+     * it could not be converted.
+     */
     public function handle(
         Request $request,
         HttpRequest $httpRequest,
@@ -145,6 +157,8 @@ class ConvertSerializedDataTool extends Tool
     }
 
     /**
+     * The tool's output schema, covering both the success and error shapes.
+     *
      * @return array<string, Type>
      */
     public function outputSchema(JsonSchema $schema): array
@@ -182,6 +196,8 @@ class ConvertSerializedDataTool extends Tool
     }
 
     /**
+     * Answer with the shared error envelope as both text and structured content.
+     *
      * @param  array<string, mixed>|null  $diagnostic
      */
     private function error(string $code, string $message, ?array $diagnostic = null): ResponseFactory

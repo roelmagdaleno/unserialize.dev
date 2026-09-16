@@ -21,6 +21,9 @@ use Throwable;
  */
 readonly class UsageEventRecorder
 {
+    /**
+     * Sanitizes the three untrusted values before they are stored.
+     */
     public function __construct(private UsageMetadataNormalizer $normalizer) {}
 
     /**

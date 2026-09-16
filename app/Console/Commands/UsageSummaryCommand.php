@@ -21,6 +21,9 @@ use Illuminate\Validation\Rule;
     {--outcome= : Limit the summary to one outcome category}
     {--json : Print the summary as JSON instead of a table}')]
 #[Description('Report historical conversion counts and the latest successful use')]
+/**
+ * Reports the daily conversion aggregates, and when each surface last worked.
+ */
 class UsageSummaryCommand extends Command
 {
     /**

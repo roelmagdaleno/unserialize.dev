@@ -4,6 +4,12 @@ namespace App\Enums;
 
 use App\Services\Serialized;
 
+/**
+ * Why a conversion attempt was refused.
+ *
+ * Every case is published to callers, so each one names a condition the caller
+ * can act on rather than an internal failure mode.
+ */
 enum ConversionErrorCode: string
 {
     case DepthLimitExceeded = 'depth_limit_exceeded';
@@ -12,6 +18,9 @@ enum ConversionErrorCode: string
     case InvalidInput = 'invalid_input';
     case UnsupportedObject = 'unsupported_object';
 
+    /**
+     * The sentence shown to the caller for this error.
+     */
     public function message(): string
     {
         return match ($this) {

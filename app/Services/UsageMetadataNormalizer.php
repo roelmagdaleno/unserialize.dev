@@ -17,6 +17,9 @@ namespace App\Services;
  */
 class UsageMetadataNormalizer
 {
+    /**
+     * What a sensitive query value is replaced with.
+     */
     private const string REDACTED = '[redacted]';
 
     /**

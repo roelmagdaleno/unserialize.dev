@@ -27,6 +27,9 @@ use App\Enums\SyntaxErrorCode;
  */
 readonly class SyntaxDiagnosticFactory
 {
+    /**
+     * Nothing was submitted.
+     */
     public function emptyValue(): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -37,6 +40,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * A complete value is followed by bytes that are not part of it.
+     */
     public function trailingData(int $position, int $length): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -49,6 +55,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * The value nests past the depth the scanner inspects.
+     */
     public function depthLimitExceeded(int $position): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -60,6 +69,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * A value starts with a byte that names no type.
+     */
     public function unknownTypeMarker(int $position): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -72,6 +84,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * A boolean carries something other than `0` or `1`.
+     */
     public function nonBinaryBoolean(int $position, int $start): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -84,6 +99,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * An integer token declares no digits.
+     */
     public function integerWithoutDigits(int $digitsStart, int $position, int $start): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -96,6 +114,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * A float token declares no digits.
+     */
     public function floatWithoutDigits(int $numberStart, int $position, int $start): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -108,6 +129,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * A float's exponent declares no digits.
+     */
     public function floatExponentWithoutDigits(int $numberStart, int $position, int $start): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -120,6 +144,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * A string's declared byte length is not a number.
+     */
     public function nonNumericStringLength(int $lengthStart, int $position, int $tokenStart): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -132,6 +159,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * An escaped string holds an escape that is not two hex digits.
+     */
     public function malformedEscape(int $position, int $length, int $tokenStart): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -216,6 +246,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * An array's declared element count is not a number.
+     */
     public function nonNumericElementCount(int $countStart, int $position, int $start): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -228,6 +261,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * An array holds fewer elements than it declares.
+     */
     public function arrayShorterThanDeclared(int $start, int $position, int $declared, int $seen, int $countStart, int $countEnd): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -301,6 +337,8 @@ readonly class SyntaxDiagnosticFactory
     }
 
     /**
+     * An array key is neither an integer nor a string.
+     *
      * @param  int|false  $tokenEnd  Offset of the `;` ending the offending token, as returned by `strpos()`.
      */
     public function invalidArrayKey(int $position, int|false $tokenEnd, int $contextStart): SyntaxDiagnostic
@@ -315,6 +353,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * An object's declared property count is not a number.
+     */
     public function nonNumericPropertyCount(int $countStart, int $position, int $start): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -327,6 +368,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * A custom-serialized object's declared payload length is not a number.
+     */
     public function nonNumericPayloadLength(int $position, int $start): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -339,6 +383,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * A reference token names no target value.
+     */
     public function referenceWithoutTarget(int $digitsStart, int $position, int $start): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -352,6 +399,8 @@ readonly class SyntaxDiagnosticFactory
     }
 
     /**
+     * A reference points past the values the payload defines.
+     *
      * The whole token is framed, because PHP accepts a reference token before
      * deciding it points nowhere and then blames the byte after it.
      */
@@ -367,6 +416,9 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * An expected delimiter or terminator is not where it should be.
+     */
     public function missingByte(string $byte, int $position, int $contextStart): SyntaxDiagnostic
     {
         return new SyntaxDiagnostic(
@@ -379,16 +431,25 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * The payload stops where another value was expected.
+     */
     public function valueEndedEarly(int $length, int $contextStart): SyntaxDiagnostic
     {
         return $this->endedEarly($length, $contextStart, 'The value ends where another value was expected.');
     }
 
+    /**
+     * The payload stops between a boolean marker and its value.
+     */
     public function booleanEndedBeforeValue(int $length, int $contextStart): SyntaxDiagnostic
     {
         return $this->endedEarly($length, $contextStart, 'The boolean ends before its value.');
     }
 
+    /**
+     * The payload stops before an array closes.
+     */
     public function arrayMissingClosingBrace(int $length, int $start): SyntaxDiagnostic
     {
         return $this->endedEarly(
@@ -398,16 +459,25 @@ readonly class SyntaxDiagnosticFactory
         );
     }
 
+    /**
+     * The payload stops where an array key was expected.
+     */
     public function arrayEndedBeforeKey(int $length, int $contextStart): SyntaxDiagnostic
     {
         return $this->endedEarly($length, $contextStart, 'The array ends where a key was expected.');
     }
 
+    /**
+     * The payload stops before a custom-serialized payload closes.
+     */
     public function customObjectEndedBeforeBrace(int $length, int $contextStart): SyntaxDiagnostic
     {
         return $this->endedEarly($length, $contextStart, 'The custom-serialized payload ends before its closing brace.');
     }
 
+    /**
+     * The payload stops before a specific expected byte.
+     */
     public function endedBeforeByte(string $byte, int $length, int $contextStart): SyntaxDiagnostic
     {
         return $this->endedEarly(

@@ -12,28 +12,33 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
+/**
+ * Records what a conversion did, without recording what it converted.
+ *
+ * Every field written here has a small closed range -- two enums, a duration
+ * and a size bucket -- which is what makes the privacy claim checkable rather
+ * than merely stated.
+ */
 readonly class ConversionTelemetry
 {
+    /**
+     * Persists the event row behind each recorded conversion.
+     */
     public function __construct(private UsageEventRecorder $recorder) {}
 
     /**
-     * Record one conversion.
+     * Record one conversion to the log, the event table and the daily aggregate.
      *
-     * Every field here has a small closed range: two enums, a duration, and a
-     * size bucket. That is what makes the privacy claim checkable rather than
-     * merely stated, so keep it true. In particular the diagnostic's byte offset
-     * must never be logged: it is a direct measurement of the submitted value,
-     * it has unbounded cardinality, and across repeated submissions it leaks the
-     * shape of data the converter promises not to retain. The parameter is typed
-     * as an enum so a fragment of user input cannot reach the logger by mistake.
-     *
-     * The optional context carries the entry point's technology metadata. It is
-     * a typed allowlist rather than an array, and the three untrusted values in
-     * it are normalized on the way to the event table, never into this log.
-     *
-     * The event insert and the aggregate increment are attempted independently:
-     * they answer different questions over different lifetimes, so a failure in
-     * either must leave the other alone and must not reach the caller.
+     * - The diagnostic's byte offset must never be logged: it measures the
+     *   submitted value directly and across repeated submissions leaks the shape
+     *   of data the converter promises not to retain. The parameter is an enum
+     *   so no fragment of user input can reach the logger by mistake.
+     * - `$context` is a typed allowlist rather than an array; its three
+     *   untrusted values are normalized on the way to the event table and never
+     *   reach this log.
+     * - The event insert and the aggregate increment are attempted
+     *   independently, so a failure in either leaves the other alone and does
+     *   not reach the caller.
      */
     public function record(
         ConversionInterface $interface,
@@ -70,16 +75,13 @@ readonly class ConversionTelemetry
     /**
      * Count this conversion in the durable daily aggregate.
      *
-     * The log above is the recent diagnostic signal and the aggregate is the
-     * long-lived count, so neither may depend on the other: the log is emitted
-     * first and a persistence failure is swallowed here rather than turning a
-     * conversion the caller already completed into an error. The failure log
-     * carries the exception class and not its message, because a query
-     * exception repeats the statement it failed on, and it is deliberately not
-     * routed back through `record()`, which would re-enter this same write.
-     *
-     * Nothing derived from the submitted value is passed on: the input size
-     * bucket and the diagnostic category stay in the short-lived log only.
+     * - A persistence failure is swallowed rather than turning a conversion the
+     *   caller already completed into an error.
+     * - The failure log carries the exception class, not its message: a query
+     *   exception repeats the statement it failed on. It is not routed through
+     *   {@see self::record()}, which would re-enter this same write.
+     * - Nothing derived from the submitted value is passed on; the size bucket
+     *   and diagnostic category stay in the short-lived log only.
      */
     private function recordAggregate(ConversionInterface $interface, ConversionOutcome $outcome): void
     {
@@ -94,6 +96,9 @@ readonly class ConversionTelemetry
         }
     }
 
+    /**
+     * Bucket a payload size, so no exact byte count is ever recorded.
+     */
     private function inputSizeBucket(int $bytes): string
     {
         return match (true) {

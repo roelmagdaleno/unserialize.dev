@@ -6,6 +6,13 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Refuse MCP requests whose Host or Origin is not this application.
+ *
+ * This is the DNS-rebinding guard the MCP transport specification requires for
+ * a locally reachable server. A request with no Origin header is allowed, since
+ * a browser always sends one for a cross-origin request.
+ */
 class ValidateMcpRequestOrigin
 {
     /**
@@ -30,6 +37,9 @@ class ValidateMcpRequestOrigin
         return $next($request);
     }
 
+    /**
+     * Whether the request's Host is this application's own.
+     */
     private function hostMatches(Request $request, string $applicationUrl): bool
     {
         $applicationHost = parse_url($applicationUrl, PHP_URL_HOST);
@@ -38,6 +48,9 @@ class ValidateMcpRequestOrigin
             && hash_equals(strtolower($applicationHost), strtolower($request->getHost()));
     }
 
+    /**
+     * Whether a supplied Origin is this application's own.
+     */
     private function originMatches(Request $request, string $applicationUrl): bool
     {
         $origin = $request->header('Origin');
@@ -54,6 +67,12 @@ class ValidateMcpRequestOrigin
             && hash_equals($applicationOrigin, $requestOrigin);
     }
 
+    /**
+     * Reduce a URL to `scheme://host:port`, or null when it is not a bare origin.
+     *
+     * The default port is filled in so `https://example.com` and
+     * `https://example.com:443` compare equal.
+     */
     private function origin(string $url): ?string
     {
         $parts = parse_url($url);

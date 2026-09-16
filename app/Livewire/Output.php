@@ -7,22 +7,19 @@ use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+/**
+ * Shows one stored conversion output on its own page.
+ */
 #[Layout('components.layouts.app')]
 class Output extends Component
 {
     /**
-     * The output model.
-     *
-     * @since 1.0.0
+     * The output being displayed.
      */
     public OutputModel $output;
 
     /**
-     * Mount the component.
-     *
-     * Set the output formats and more.
-     *
-     * @since 1.0.0
+     * Bind the resolved output to the component.
      */
     public function mount(OutputModel $output): void
     {
@@ -30,9 +27,7 @@ class Output extends Component
     }
 
     /**
-     * Render the view.
-     *
-     * @since 1.0.0
+     * Render the output page.
      */
     public function render(): View
     {

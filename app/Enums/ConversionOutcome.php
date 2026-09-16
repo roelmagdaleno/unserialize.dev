@@ -6,9 +6,8 @@ namespace App\Enums;
  * Every way a conversion attempt can end.
  *
  * This is the closed vocabulary the `usage_events.outcome` column and the daily
- * aggregate are keyed on. It used to exist only as bare strings repeated across
- * the browser, HTTP and MCP surfaces, where a typo would have reached the
- * metrics tables silently and split one category in two.
+ * aggregate are keyed on, shared by the browser, HTTP and MCP surfaces so one
+ * category cannot split in two.
  *
  * The failure cases mirror {@see ConversionErrorCode} one for one, plus the
  * three refusals that happen before conversion is ever attempted.

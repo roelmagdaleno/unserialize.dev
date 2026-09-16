@@ -27,6 +27,9 @@ class UsageEvent extends Model
 
     use MassPrunable;
 
+    /**
+     * Events carry `occurred_at` alone; there is nothing to update.
+     */
     public $timestamps = false;
 
     /**

@@ -6,6 +6,12 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Keep stored conversion outputs out of search engines.
+ *
+ * These pages hold whatever a visitor pasted, so they are never indexed even
+ * though their URLs are shareable.
+ */
 class AddLegacyOutputNoIndexHeader
 {
     /**

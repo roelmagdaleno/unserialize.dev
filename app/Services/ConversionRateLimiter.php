@@ -12,14 +12,16 @@ use Illuminate\Http\Request;
 /**
  * The one place a refused conversion is identified, counted and answered.
  *
- * The browser, the HTTP API and the MCP endpoint each used to derive the client
- * key and record the refusal on their own, three copies of the same four lines.
- * They still answer differently -- the two HTTP surfaces return a 429 envelope
- * and the browser attaches an inline field error -- so the response stays with
- * the caller and only the identification and the telemetry live here.
+ * The browser, the HTTP API and the MCP endpoint all identify the client and
+ * count the refusal through this class. They answer differently -- the two HTTP
+ * surfaces return a 429 envelope, the browser attaches an inline field error --
+ * so the response stays with the caller.
  */
 readonly class ConversionRateLimiter
 {
+    /**
+     * Records every refusal as a `rate_limited` outcome.
+     */
     public function __construct(private ConversionTelemetry $telemetry) {}
 
     /**
@@ -33,6 +35,9 @@ readonly class ConversionRateLimiter
         return hash('sha256', (string) $request->ip());
     }
 
+    /**
+     * The configured per-minute conversion allowance.
+     */
     public function attemptsPerMinute(): int
     {
         return (int) config('conversion.rate_limit.per_minute');

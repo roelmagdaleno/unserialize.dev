@@ -13,31 +13,24 @@ use App\Services\Scanner\ValueParser;
 /**
  * Entry point to the recursive-descent scan over the PHP serialization grammar.
  *
- * This class decides only what a completed scan means: whether the payload was
- * empty, whether a depth limit makes the verdict unverifiable, whether bytes
- * are left over, and which {@see ScanOutcome} follows. The grammar itself lives
- * in {@see ValueParser} and the rule families beneath it.
+ * This class decides only what a completed scan means: empty payload, depth
+ * limit, leftover bytes, and which {@see ScanOutcome} follows. The grammar
+ * lives in {@see ValueParser} and the rule families beneath it.
  *
- * The scanner exists to explain a failure, never to decide one. It is consulted
- * only after `unserialize()` has already rejected a payload, so a bug in this
- * grammar can degrade a message but can never reject a value PHP accepts.
+ * The scanner explains a failure, never decides one. It is consulted only after
+ * `unserialize()` has already rejected a payload, so a bug here can degrade a
+ * message but can never reject a value PHP accepts. Three limits follow:
  *
- * Two limits are deliberate rather than accidental:
- *
- * - Exact offset agreement with PHP is not achievable in general. PHP reports
- *   wherever its own lexer stopped, which is the element start for `b:2;` and
- *   one byte past the token for `r:1;`. The guarantee this class supports is
- *   containment: the byte PHP blames falls inside {@see SyntaxDiagnostic::claimInterval()}.
- *   Exact equality holds only for string length mismatches and trailing data.
- * - `E:`, `C:`, `r:`, and `R:` are validated for shape only. Their real validity
- *   depends on class resolution and PHP's internal value numbering, and
- *   reproducing either on untrusted input is a larger accuracy risk than
- *   declining to judge them.
+ * - Offsets guarantee containment, not equality. PHP reports wherever its own
+ *   lexer stopped, so the promise is that the byte PHP blames falls inside
+ *   {@see SyntaxDiagnostic::claimInterval()}. Exact agreement holds only for
+ *   string length mismatches and trailing data.
+ * - `E:`, `C:`, `r:` and `R:` are validated for shape only, because their real
+ *   validity depends on class resolution and PHP's internal value numbering.
  * - A suggested string length is measured to the first `";` ahead of the
- *   contents. When the contents themselves hold that pair the suggestion
- *   restores a value that decodes rather than the value the author meant, since
- *   nothing in a corrupted payload records the original intent. The message
- *   always names the same byte count it suggests, so the two never disagree.
+ *   contents, so when the contents hold that pair the suggestion restores a
+ *   value that decodes rather than the one the author meant. The message always
+ *   names the same byte count it suggests, so the two never disagree.
  */
 class SerializedScanner
 {
@@ -47,8 +40,14 @@ class SerializedScanner
      */
     public const int MAX_DEPTH = ValueParser::MAX_DEPTH;
 
+    /**
+     * Phrases the sentence for every problem the grammar finds.
+     */
     private readonly SyntaxDiagnosticFactory $diagnostics;
 
+    /**
+     * The grammar itself, dispatching on each value's type marker.
+     */
     private readonly ValueParser $parser;
 
     /**
