@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\ScanOutcome;
 use App\Data\SyntaxDiagnostic;
 use App\Enums\SyntaxErrorCode;
+use App\Services\Scanner\ScannerCursor;
 use App\Services\Scanner\SyntaxDiagnosticFactory;
 
 /**
@@ -30,6 +31,10 @@ use App\Services\Scanner\SyntaxDiagnosticFactory;
  *   restores a value that decodes rather than the value the author meant, since
  *   nothing in a corrupted payload records the original intent. The message
  *   always names the same byte count it suggests, so the two never disagree.
+ *
+ * Every rule below takes a {@see ScannerCursor} and advances it past what it
+ * consumed, returning null on success and a diagnostic on failure. The one
+ * exception is {@see self::surplusElements()}, which looks ahead on a fork.
  */
 class SerializedScanner
 {
@@ -64,9 +69,8 @@ class SerializedScanner
             return ScanOutcome::invalid($this->diagnostics->emptyValue());
         }
 
-        $position = 0;
-        $unverifiable = false;
-        $diagnostic = $this->value($data, $length, $position, 0, $unverifiable);
+        $cursor = new ScannerCursor($data, $length);
+        $diagnostic = $this->value($cursor, 0);
 
         if ($diagnostic !== null && $diagnostic->code === SyntaxErrorCode::DepthLimitExceeded) {
             return ScanOutcome::unverifiable();
@@ -76,185 +80,168 @@ class SerializedScanner
             return ScanOutcome::invalid($diagnostic);
         }
 
-        if ($position < $length) {
-            return ScanOutcome::invalid($this->diagnostics->trailingData($position, $length));
+        if ($cursor->position < $length) {
+            return ScanOutcome::invalid($this->diagnostics->trailingData($cursor->position, $length));
         }
 
-        return $unverifiable ? ScanOutcome::unverifiable($position) : ScanOutcome::valid($position);
+        return $cursor->unverifiable
+            ? ScanOutcome::unverifiable($cursor->position)
+            : ScanOutcome::valid($cursor->position);
     }
 
     /**
      * Consume one serialized value starting at the cursor.
      */
-    private function value(string $data, int $length, int &$position, int $depth, bool &$unverifiable): ?SyntaxDiagnostic
+    private function value(ScannerCursor $cursor, int $depth): ?SyntaxDiagnostic
     {
         if ($depth > self::MAX_DEPTH) {
-            $unverifiable = true;
+            $cursor->unverifiable = true;
 
-            return $this->diagnostics->depthLimitExceeded($position);
+            return $this->diagnostics->depthLimitExceeded($cursor->position);
         }
 
-        if ($position >= $length) {
-            return $this->diagnostics->valueEndedEarly($length, $position);
+        $position = $cursor->position;
+
+        if ($position >= $cursor->length) {
+            return $this->diagnostics->valueEndedEarly($cursor->length, $position);
         }
 
-        return match ($data[$position]) {
-            'N' => $this->nullValue($data, $length, $position),
-            'b' => $this->boolean($data, $length, $position),
-            'i' => $this->integer($data, $length, $position),
-            'd' => $this->double($data, $length, $position),
-            's' => $this->string($data, $length, $position, false),
-            'S' => $this->string($data, $length, $position, true),
-            'a' => $this->arrayValue($data, $length, $position, $depth, $unverifiable),
-            'O' => $this->objectValue($data, $length, $position, $depth, $unverifiable),
-            'C' => $this->customObject($data, $length, $position, $unverifiable),
-            'E' => $this->enumValue($data, $length, $position, $unverifiable),
-            'r', 'R' => $this->reference($data, $length, $position, $unverifiable),
-            default => $this->diagnostics->unknownTypeMarker($position),
+        return match ($cursor->data[$position]) {
+            'N' => $this->nullValue($cursor),
+            'b' => $this->boolean($cursor),
+            'i' => $this->integer($cursor),
+            'd' => $this->double($cursor),
+            's' => $this->string($cursor, false),
+            'S' => $this->string($cursor, true),
+            'a' => $this->arrayValue($cursor, $depth),
+            'O' => $this->objectValue($cursor, $depth),
+            'C' => $this->customObject($cursor),
+            'E' => $this->enumValue($cursor),
+            'r', 'R' => $this->reference($cursor),
+            default => $this->diagnostics->unknownTypeMarker($cursor->position),
         };
     }
 
-    private function nullValue(string $data, int $length, int &$position): ?SyntaxDiagnostic
+    private function nullValue(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
+        $start = $cursor->position;
+        $cursor->position++;
 
-        return $this->terminator($data, $length, $position, $start);
+        return $this->terminator($cursor, $start);
     }
 
-    private function boolean(string $data, int $length, int &$position): ?SyntaxDiagnostic
+    private function boolean(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
+        $start = $cursor->position;
+        $cursor->position++;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        if ($position >= $length) {
-            return $this->diagnostics->booleanEndedBeforeValue($length, $start);
+        if ($cursor->atEnd()) {
+            return $this->diagnostics->booleanEndedBeforeValue($cursor->length, $start);
         }
 
-        if ($data[$position] !== '0' && $data[$position] !== '1') {
-            return $this->diagnostics->nonBinaryBoolean($position, $start);
+        $byte = $cursor->current();
+
+        if ($byte !== '0' && $byte !== '1') {
+            return $this->diagnostics->nonBinaryBoolean($cursor->position, $start);
         }
 
-        $position++;
+        $cursor->position++;
 
-        return $this->terminator($data, $length, $position, $start);
+        return $this->terminator($cursor, $start);
     }
 
-    private function integer(string $data, int $length, int &$position): ?SyntaxDiagnostic
+    private function integer(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
+        $start = $cursor->position;
+        $cursor->position++;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        $digitsStart = $position;
+        $digitsStart = $cursor->position;
 
-        if ($position < $length && ($data[$position] === '-' || $data[$position] === '+')) {
-            $position++;
+        if (! $cursor->atEnd() && ($cursor->current() === '-' || $cursor->current() === '+')) {
+            $cursor->position++;
         }
 
-        $digits = 0;
-
-        while ($position < $length && $data[$position] >= '0' && $data[$position] <= '9') {
-            $position++;
-            $digits++;
+        if ($this->digitRun($cursor) === 0) {
+            return $this->diagnostics->integerWithoutDigits($digitsStart, $cursor->position, $start);
         }
 
-        if ($digits === 0) {
-            return $this->diagnostics->integerWithoutDigits($digitsStart, $position, $start);
-        }
-
-        return $this->terminator($data, $length, $position, $start);
+        return $this->terminator($cursor, $start);
     }
 
-    private function double(string $data, int $length, int &$position): ?SyntaxDiagnostic
+    private function double(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
+        $start = $cursor->position;
+        $cursor->position++;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        $numberStart = $position;
+        $numberStart = $cursor->position;
 
         foreach (['-INF', 'INF', 'NAN'] as $literal) {
-            if (substr($data, $position, strlen($literal)) === $literal) {
-                $position += strlen($literal);
+            if (substr($cursor->data, $cursor->position, strlen($literal)) === $literal) {
+                $cursor->position += strlen($literal);
 
-                return $this->terminator($data, $length, $position, $start);
+                return $this->terminator($cursor, $start);
             }
         }
 
-        if ($position < $length && ($data[$position] === '-' || $data[$position] === '+')) {
-            $position++;
+        if (! $cursor->atEnd() && ($cursor->current() === '-' || $cursor->current() === '+')) {
+            $cursor->position++;
         }
 
-        $digits = 0;
+        $digits = $this->digitRun($cursor);
 
-        while ($position < $length && $data[$position] >= '0' && $data[$position] <= '9') {
-            $position++;
-            $digits++;
-        }
-
-        if ($position < $length && $data[$position] === '.') {
-            $position++;
-
-            while ($position < $length && $data[$position] >= '0' && $data[$position] <= '9') {
-                $position++;
-                $digits++;
-            }
+        if (! $cursor->atEnd() && $cursor->current() === '.') {
+            $cursor->position++;
+            $digits += $this->digitRun($cursor);
         }
 
         if ($digits === 0) {
-            return $this->diagnostics->floatWithoutDigits($numberStart, $position, $start);
+            return $this->diagnostics->floatWithoutDigits($numberStart, $cursor->position, $start);
         }
 
-        if ($position < $length && ($data[$position] === 'e' || $data[$position] === 'E')) {
-            $position++;
+        if (! $cursor->atEnd() && ($cursor->current() === 'e' || $cursor->current() === 'E')) {
+            $cursor->position++;
 
-            if ($position < $length && ($data[$position] === '-' || $data[$position] === '+')) {
-                $position++;
+            if (! $cursor->atEnd() && ($cursor->current() === '-' || $cursor->current() === '+')) {
+                $cursor->position++;
             }
 
-            $exponentDigits = 0;
-
-            while ($position < $length && $data[$position] >= '0' && $data[$position] <= '9') {
-                $position++;
-                $exponentDigits++;
-            }
-
-            if ($exponentDigits === 0) {
-                return $this->diagnostics->floatExponentWithoutDigits($numberStart, $position, $start);
+            if ($this->digitRun($cursor) === 0) {
+                return $this->diagnostics->floatExponentWithoutDigits($numberStart, $cursor->position, $start);
             }
         }
 
-        return $this->terminator($data, $length, $position, $start);
+        return $this->terminator($cursor, $start);
     }
 
-    private function string(string $data, int $length, int &$position, bool $escaped): ?SyntaxDiagnostic
+    private function string(ScannerCursor $cursor, bool $escaped): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $marker = $data[$position];
-        $position++;
+        $start = $cursor->position;
+        $marker = $cursor->data[$start];
+        $cursor->position = $start + 1;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        $payload = $this->quotedPayload($data, $length, $position, $start, $escaped, $marker.':');
+        $payload = $this->quotedPayload($cursor, $start, $escaped, $marker.':');
 
         if ($payload !== null) {
             return $payload;
         }
 
-        return $this->terminator($data, $length, $position, $start);
+        return $this->terminator($cursor, $start);
     }
 
     /**
@@ -266,56 +253,57 @@ class SerializedScanner
      *
      * @param  string|null  $fixPrefix  Token prefix used to phrase a length correction, or null when no correction can be phrased.
      */
-    private function quotedPayload(string $data, int $length, int &$position, int $tokenStart, bool $escaped, ?string $fixPrefix): ?SyntaxDiagnostic
+    private function quotedPayload(ScannerCursor $cursor, int $tokenStart, bool $escaped, ?string $fixPrefix): ?SyntaxDiagnostic
     {
-        $lengthStart = $position;
-        $declared = $this->unsignedDigits($data, $length, $position);
+        $lengthStart = $cursor->position;
+        $declared = $this->unsignedDigits($cursor);
 
         if ($declared === false) {
-            return $this->diagnostics->nonNumericStringLength($lengthStart, $position, $tokenStart);
+            return $this->diagnostics->nonNumericStringLength($lengthStart, $cursor->position, $tokenStart);
         }
 
-        $lengthEnd = $position;
+        $lengthEnd = $cursor->position;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $tokenStart, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $tokenStart, ':')) !== null) {
             return $delimiter;
         }
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $tokenStart, '"')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $tokenStart, '"')) !== null) {
             return $delimiter;
         }
 
-        $contentStart = $position;
+        $data = $cursor->data;
+        $length = $cursor->length;
+        $contentStart = $cursor->position;
 
         if ($escaped) {
-            $cursor = $contentStart;
+            $scan = $contentStart;
             $decoded = 0;
 
-            while ($cursor < $length && $decoded < $declared) {
-                if ($data[$cursor] !== '\\') {
-                    $cursor++;
+            while ($scan < $length && $decoded < $declared) {
+                if ($data[$scan] !== '\\') {
+                    $scan++;
                     $decoded++;
 
                     continue;
                 }
 
-                if ($cursor + 2 >= $length || ctype_xdigit($data[$cursor + 1]) === false || ctype_xdigit($data[$cursor + 2]) === false) {
-                    return $this->diagnostics->malformedEscape($cursor, $length, $tokenStart);
+                if ($scan + 2 >= $length || ctype_xdigit($data[$scan + 1]) === false || ctype_xdigit($data[$scan + 2]) === false) {
+                    return $this->diagnostics->malformedEscape($scan, $length, $tokenStart);
                 }
 
-                $cursor += 3;
+                $scan += 3;
                 $decoded++;
             }
 
-            $expectedTerminator = $cursor;
+            $expectedTerminator = $scan;
         } else {
             $expectedTerminator = $contentStart + $declared;
         }
 
         if ($expectedTerminator >= $length || $data[$expectedTerminator] !== '"') {
             return $this->lengthMismatch(
-                $data,
-                $length,
+                $cursor,
                 $tokenStart,
                 $lengthStart,
                 $lengthEnd,
@@ -326,7 +314,7 @@ class SerializedScanner
             );
         }
 
-        $position = $expectedTerminator + 1;
+        $cursor->position = $expectedTerminator + 1;
 
         return null;
     }
@@ -340,8 +328,7 @@ class SerializedScanner
      * exactly, since PHP always blames the byte where the quote was expected.
      */
     private function lengthMismatch(
-        string $data,
-        int $length,
+        ScannerCursor $cursor,
         int $tokenStart,
         int $lengthStart,
         int $lengthEnd,
@@ -350,7 +337,7 @@ class SerializedScanner
         int $expectedTerminator,
         ?string $fixPrefix,
     ): SyntaxDiagnostic {
-        $closingQuote = strpos($data, '";', $contentStart);
+        $closingQuote = strpos($cursor->data, '";', $contentStart);
         $actual = $closingQuote === false ? null : $closingQuote - $contentStart;
 
         /**
@@ -359,7 +346,7 @@ class SerializedScanner
          * length that cannot be corrected.
          */
         if ($actual === null) {
-            return $this->diagnostics->unterminatedString($contentStart, $length, $tokenStart, $declared, $expectedTerminator);
+            return $this->diagnostics->unterminatedString($contentStart, $cursor->length, $tokenStart, $declared, $expectedTerminator);
         }
 
         return $this->diagnostics->stringLengthMismatch(
@@ -374,57 +361,57 @@ class SerializedScanner
         );
     }
 
-    private function arrayValue(string $data, int $length, int &$position, int $depth, bool &$unverifiable): ?SyntaxDiagnostic
+    private function arrayValue(ScannerCursor $cursor, int $depth): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
+        $start = $cursor->position;
+        $cursor->position++;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        $countStart = $position;
-        $declared = $this->unsignedDigits($data, $length, $position);
+        $countStart = $cursor->position;
+        $declared = $this->unsignedDigits($cursor);
 
         if ($declared === false) {
-            return $this->diagnostics->nonNumericElementCount($countStart, $position, $start);
+            return $this->diagnostics->nonNumericElementCount($countStart, $cursor->position, $start);
         }
 
-        $countEnd = $position;
+        $countEnd = $cursor->position;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, '{')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, '{')) !== null) {
             return $delimiter;
         }
 
         for ($seen = 0; $seen < $declared; $seen++) {
-            if ($position < $length && $data[$position] === '}') {
-                return $this->diagnostics->arrayShorterThanDeclared($start, $position, $declared, $seen, $countStart, $countEnd);
+            if ($cursor->position < $cursor->length && $cursor->data[$cursor->position] === '}') {
+                return $this->diagnostics->arrayShorterThanDeclared($start, $cursor->position, $declared, $seen, $countStart, $countEnd);
             }
 
-            $elementStart = $position;
+            $elementStart = $cursor->position;
 
-            if (($key = $this->arrayKey($data, $length, $position, $start)) !== null) {
+            if (($key = $this->arrayKey($cursor, $start)) !== null) {
                 return $key->widenedTo($elementStart);
             }
 
-            if (($element = $this->value($data, $length, $position, $depth + 1, $unverifiable)) !== null) {
+            if (($element = $this->value($cursor, $depth + 1)) !== null) {
                 return $element->widenedTo($elementStart);
             }
         }
 
-        if ($position >= $length) {
-            return $this->diagnostics->arrayMissingClosingBrace($length, $start);
+        if ($cursor->atEnd()) {
+            return $this->diagnostics->arrayMissingClosingBrace($cursor->length, $start);
         }
 
-        if ($data[$position] !== '}') {
-            return $this->surplusElements($data, $length, $position, $start, $countStart, $countEnd, $declared, $depth, $unverifiable);
+        if ($cursor->current() !== '}') {
+            return $this->surplusElements($cursor, $start, $countStart, $countEnd, $declared, $depth);
         }
 
-        $position++;
+        $cursor->position++;
 
         return null;
     }
@@ -435,30 +422,33 @@ class SerializedScanner
      * The surplus is counted by parsing ahead so the correction can name the
      * real total; when the remainder does not parse, the count is omitted
      * rather than guessed.
+     *
+     * The walk runs on a fork: it must not move the real cursor, which still
+     * has to frame the diagnostic from where the surplus began, and it must not
+     * publish `unverifiable`, since a reference or custom object among the
+     * surplus says nothing about the payload as a whole.
      */
     private function surplusElements(
-        string $data,
-        int $length,
-        int $position,
+        ScannerCursor $cursor,
         int $start,
         int $countStart,
         int $countEnd,
         int $declared,
         int $depth,
-        bool $unverifiable,
     ): SyntaxDiagnostic {
-        $cursor = $position;
+        $position = $cursor->position;
+        $lookahead = $cursor->fork();
         $surplus = 0;
         $counted = true;
 
-        while ($cursor < $length && $data[$cursor] !== '}') {
-            if ($this->arrayKey($data, $length, $cursor, $start) !== null) {
+        while (! $lookahead->atEnd() && $lookahead->current() !== '}') {
+            if ($this->arrayKey($lookahead, $start) !== null) {
                 $counted = false;
 
                 break;
             }
 
-            if ($this->value($data, $length, $cursor, $depth + 1, $unverifiable) !== null) {
+            if ($this->value($lookahead, $depth + 1) !== null) {
                 $counted = false;
 
                 break;
@@ -467,11 +457,11 @@ class SerializedScanner
             $surplus++;
         }
 
-        $total = $counted && $cursor < $length ? $declared + $surplus : null;
+        $total = $counted && ! $lookahead->atEnd() ? $declared + $surplus : null;
 
         return $this->diagnostics->arrayLongerThanDeclared(
             $position,
-            min($cursor, $length),
+            min($lookahead->position, $cursor->length),
             $start,
             $countStart,
             $countEnd,
@@ -487,25 +477,24 @@ class SerializedScanner
      * single byte, because PHP blames the byte after the token it could not
      * accept as a key and the two locations must overlap.
      */
-    private function arrayKey(string $data, int $length, int &$position, int $contextStart): ?SyntaxDiagnostic
+    private function arrayKey(ScannerCursor $cursor, int $contextStart): ?SyntaxDiagnostic
     {
-        if ($position >= $length) {
-            return $this->diagnostics->arrayEndedBeforeKey($length, $contextStart);
+        $position = $cursor->position;
+
+        if ($position >= $cursor->length) {
+            return $this->diagnostics->arrayEndedBeforeKey($cursor->length, $contextStart);
         }
 
-        if ($data[$position] === 'i') {
-            return $this->integer($data, $length, $position);
-        }
-
-        if ($data[$position] === 's') {
-            return $this->string($data, $length, $position, false);
-        }
-
-        if ($data[$position] === 'S') {
-            return $this->string($data, $length, $position, true);
-        }
-
-        return $this->diagnostics->invalidArrayKey($position, strpos($data, ';', $position), $contextStart);
+        return match ($cursor->data[$position]) {
+            'i' => $this->integer($cursor),
+            's' => $this->string($cursor, false),
+            'S' => $this->string($cursor, true),
+            default => $this->diagnostics->invalidArrayKey(
+                $cursor->position,
+                strpos($cursor->data, ';', $cursor->position),
+                $contextStart,
+            ),
+        };
     }
 
     /**
@@ -514,173 +503,197 @@ class SerializedScanner
      * A well-formed object is reported as structurally valid so it reaches the
      * dedicated unsupported-object path instead of being called malformed.
      */
-    private function objectValue(string $data, int $length, int &$position, int $depth, bool &$unverifiable): ?SyntaxDiagnostic
+    private function objectValue(ScannerCursor $cursor, int $depth): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
+        $start = $cursor->position;
+        $cursor->position++;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        if (($className = $this->quotedPayload($data, $length, $position, $start, false, null)) !== null) {
+        if (($className = $this->quotedPayload($cursor, $start, false, null)) !== null) {
             return $className;
         }
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        $countStart = $position;
-        $declared = $this->unsignedDigits($data, $length, $position);
+        $countStart = $cursor->position;
+        $declared = $this->unsignedDigits($cursor);
 
         if ($declared === false) {
-            return $this->diagnostics->nonNumericPropertyCount($countStart, $position, $start);
+            return $this->diagnostics->nonNumericPropertyCount($countStart, $cursor->position, $start);
         }
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, '{')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, '{')) !== null) {
             return $delimiter;
         }
 
         for ($seen = 0; $seen < $declared; $seen++) {
-            $propertyStart = $position;
+            $propertyStart = $cursor->position;
 
-            if (($key = $this->arrayKey($data, $length, $position, $start)) !== null) {
+            if (($key = $this->arrayKey($cursor, $start)) !== null) {
                 return $key->widenedTo($propertyStart);
             }
 
-            if (($element = $this->value($data, $length, $position, $depth + 1, $unverifiable)) !== null) {
+            if (($element = $this->value($cursor, $depth + 1)) !== null) {
                 return $element->widenedTo($propertyStart);
             }
         }
 
-        return $this->delimiter($data, $length, $position, $start, '}');
+        return $this->delimiter($cursor, $start, '}');
     }
 
     /**
      * Consume a custom-serialized object, whose body is opaque by definition.
      */
-    private function customObject(string $data, int $length, int &$position, bool &$unverifiable): ?SyntaxDiagnostic
+    private function customObject(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
-        $unverifiable = true;
+        $start = $cursor->position;
+        $cursor->position++;
+        $cursor->unverifiable = true;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        if (($className = $this->quotedPayload($data, $length, $position, $start, false, null)) !== null) {
+        if (($className = $this->quotedPayload($cursor, $start, false, null)) !== null) {
             return $className;
         }
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        $bodyLength = $this->unsignedDigits($data, $length, $position);
+        $bodyLength = $this->unsignedDigits($cursor);
 
         if ($bodyLength === false) {
-            return $this->diagnostics->nonNumericPayloadLength($position, $start);
+            return $this->diagnostics->nonNumericPayloadLength($cursor->position, $start);
         }
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, '{')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, '{')) !== null) {
             return $delimiter;
         }
 
-        $position += $bodyLength;
+        $cursor->position += $bodyLength;
 
-        if ($position >= $length) {
-            return $this->diagnostics->customObjectEndedBeforeBrace($length, $start);
+        if ($cursor->atEnd()) {
+            return $this->diagnostics->customObjectEndedBeforeBrace($cursor->length, $start);
         }
 
-        return $this->delimiter($data, $length, $position, $start, '}');
+        return $this->delimiter($cursor, $start, '}');
     }
 
     /**
      * Consume a serialized enum case, whose validity needs class resolution.
      */
-    private function enumValue(string $data, int $length, int &$position, bool &$unverifiable): ?SyntaxDiagnostic
+    private function enumValue(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
-        $unverifiable = true;
+        $start = $cursor->position;
+        $cursor->position++;
+        $cursor->unverifiable = true;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        if (($name = $this->quotedPayload($data, $length, $position, $start, false, null)) !== null) {
+        if (($name = $this->quotedPayload($cursor, $start, false, null)) !== null) {
             return $name;
         }
 
-        return $this->terminator($data, $length, $position, $start);
+        return $this->terminator($cursor, $start);
     }
 
     /**
      * Consume a back reference, checked for shape only.
      */
-    private function reference(string $data, int $length, int &$position, bool &$unverifiable): ?SyntaxDiagnostic
+    private function reference(ScannerCursor $cursor): ?SyntaxDiagnostic
     {
-        $start = $position;
-        $position++;
-        $unverifiable = true;
+        $start = $cursor->position;
+        $cursor->position++;
+        $cursor->unverifiable = true;
 
-        if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
+        if (($delimiter = $this->delimiter($cursor, $start, ':')) !== null) {
             return $delimiter;
         }
 
-        $digitsStart = $position;
-        $target = $this->unsignedDigits($data, $length, $position);
+        $digitsStart = $cursor->position;
+        $target = $this->unsignedDigits($cursor);
 
         if ($target === false) {
-            return $this->diagnostics->referenceWithoutTarget($digitsStart, $position, $start);
+            return $this->diagnostics->referenceWithoutTarget($digitsStart, $cursor->position, $start);
         }
 
-        if (($terminator = $this->terminator($data, $length, $position, $start)) !== null) {
+        if (($terminator = $this->terminator($cursor, $start)) !== null) {
             return $terminator;
         }
 
         if ($target <= 0) {
-            return $this->diagnostics->referenceToNothing($start, $position);
+            return $this->diagnostics->referenceToNothing($start, $cursor->position);
         }
 
         return null;
     }
 
-    private function terminator(string $data, int $length, int &$position, int $contextStart): ?SyntaxDiagnostic
+    private function terminator(ScannerCursor $cursor, int $contextStart): ?SyntaxDiagnostic
     {
-        return $this->delimiter($data, $length, $position, $contextStart, ';');
+        return $this->delimiter($cursor, $contextStart, ';');
     }
 
-    private function delimiter(string $data, int $length, int &$position, int $contextStart, string $byte): ?SyntaxDiagnostic
+    private function delimiter(ScannerCursor $cursor, int $contextStart, string $byte): ?SyntaxDiagnostic
     {
-        if ($position >= $length) {
-            return $this->diagnostics->endedBeforeByte($byte, $length, $contextStart);
+        $position = $cursor->position;
+
+        if ($position >= $cursor->length) {
+            return $this->diagnostics->endedBeforeByte($byte, $cursor->length, $contextStart);
         }
 
-        if ($data[$position] !== $byte) {
+        if ($cursor->data[$position] !== $byte) {
             return $this->diagnostics->missingByte($byte, $position, $contextStart);
         }
 
-        $position++;
+        $cursor->position = $position + 1;
 
         return null;
     }
 
     /**
+     * Consume a run of digits and report how many there were.
+     */
+    private function digitRun(ScannerCursor $cursor): int
+    {
+        $data = $cursor->data;
+        $length = $cursor->length;
+        $position = $cursor->position;
+        $start = $position;
+
+        while ($position < $length && $data[$position] >= '0' && $data[$position] <= '9') {
+            $position++;
+        }
+
+        $cursor->position = $position;
+
+        return $position - $start;
+    }
+
+    /**
      * Read an unsigned digit run, refusing runs long enough to overflow an int.
      */
-    private function unsignedDigits(string $data, int $length, int &$position): int|false
+    private function unsignedDigits(ScannerCursor $cursor): int|false
     {
+        $data = $cursor->data;
+        $length = $cursor->length;
+        $position = $cursor->position;
         $start = $position;
 
         while ($position < $length
@@ -690,6 +703,8 @@ class SerializedScanner
         ) {
             $position++;
         }
+
+        $cursor->position = $position;
 
         if ($position === $start) {
             return false;
