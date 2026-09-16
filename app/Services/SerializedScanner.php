@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\ScanOutcome;
 use App\Data\SyntaxDiagnostic;
 use App\Enums\SyntaxErrorCode;
+use App\Services\Scanner\SyntaxDiagnosticFactory;
 
 /**
  * Recursive-descent scanner over the PHP serialization grammar.
@@ -44,6 +45,15 @@ class SerializedScanner
     private const int MAX_LENGTH_DIGITS = 18;
 
     /**
+     * Defaulted rather than injected: the scanner is built directly with
+     * `new SerializedScanner` in {@see Serialized} and across the
+     * test suite, and the factory is stateless, so there is nothing to wire.
+     */
+    public function __construct(
+        private SyntaxDiagnosticFactory $diagnostics = new SyntaxDiagnosticFactory,
+    ) {}
+
+    /**
      * Scan a payload and report the first problem that breaks the grammar.
      */
     public function scan(string $data): ScanOutcome
@@ -51,12 +61,7 @@ class SerializedScanner
         $length = strlen($data);
 
         if ($length === 0) {
-            return ScanOutcome::invalid(new SyntaxDiagnostic(
-                SyntaxErrorCode::UnexpectedEnd,
-                0,
-                0,
-                'The value is empty.',
-            ));
+            return ScanOutcome::invalid($this->diagnostics->emptyValue());
         }
 
         $position = 0;
@@ -72,14 +77,7 @@ class SerializedScanner
         }
 
         if ($position < $length) {
-            return ScanOutcome::invalid(new SyntaxDiagnostic(
-                SyntaxErrorCode::TrailingData,
-                $position,
-                $length - $position,
-                sprintf('The value is complete at byte %d but %d more bytes follow.', $position, $length - $position),
-                sprintf('Remove everything from byte %d onwards.', $position),
-                contextStart: $position,
-            ));
+            return ScanOutcome::invalid($this->diagnostics->trailingData($position, $length));
         }
 
         return $unverifiable ? ScanOutcome::unverifiable($position) : ScanOutcome::valid($position);
@@ -93,17 +91,11 @@ class SerializedScanner
         if ($depth > self::MAX_DEPTH) {
             $unverifiable = true;
 
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::DepthLimitExceeded,
-                $position,
-                0,
-                'The value nests deeper than the scanner inspects.',
-                contextStart: $position,
-            );
+            return $this->diagnostics->depthLimitExceeded($position);
         }
 
         if ($position >= $length) {
-            return $this->unexpectedEnd($length, $position, 'The value ends where another value was expected.');
+            return $this->diagnostics->valueEndedEarly($length, $position);
         }
 
         return match ($data[$position]) {
@@ -118,14 +110,7 @@ class SerializedScanner
             'C' => $this->customObject($data, $length, $position, $unverifiable),
             'E' => $this->enumValue($data, $length, $position, $unverifiable),
             'r', 'R' => $this->reference($data, $length, $position, $unverifiable),
-            default => new SyntaxDiagnostic(
-                SyntaxErrorCode::UnknownTypeMarker,
-                $position,
-                1,
-                sprintf('Byte %d is not a valid type marker.', $position),
-                'Values start with N, b, i, d, s, a, or O.',
-                contextStart: $position,
-            ),
+            default => $this->diagnostics->unknownTypeMarker($position),
         };
     }
 
@@ -147,18 +132,11 @@ class SerializedScanner
         }
 
         if ($position >= $length) {
-            return $this->unexpectedEnd($length, $start, 'The boolean ends before its value.');
+            return $this->diagnostics->booleanEndedBeforeValue($length, $start);
         }
 
         if ($data[$position] !== '0' && $data[$position] !== '1') {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $position,
-                1,
-                sprintf('The boolean at byte %d must be 0 or 1.', $start),
-                'Use b:0; for false and b:1; for true.',
-                contextStart: $start,
-            );
+            return $this->diagnostics->nonBinaryBoolean($position, $start);
         }
 
         $position++;
@@ -189,14 +167,7 @@ class SerializedScanner
         }
 
         if ($digits === 0) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $digitsStart,
-                max(1, $position - $digitsStart),
-                sprintf('The integer at byte %d has no digits.', $start),
-                'Write integers as i:42; or i:-42;.',
-                contextStart: $start,
-            );
+            return $this->diagnostics->integerWithoutDigits($digitsStart, $position, $start);
         }
 
         return $this->terminator($data, $length, $position, $start);
@@ -242,14 +213,7 @@ class SerializedScanner
         }
 
         if ($digits === 0) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $numberStart,
-                max(1, $position - $numberStart),
-                sprintf('The float at byte %d has no digits.', $start),
-                'Write floats as d:3.5;, d:INF;, d:-INF;, or d:NAN;.',
-                contextStart: $start,
-            );
+            return $this->diagnostics->floatWithoutDigits($numberStart, $position, $start);
         }
 
         if ($position < $length && ($data[$position] === 'e' || $data[$position] === 'E')) {
@@ -267,14 +231,7 @@ class SerializedScanner
             }
 
             if ($exponentDigits === 0) {
-                return new SyntaxDiagnostic(
-                    SyntaxErrorCode::MalformedNumber,
-                    $numberStart,
-                    max(1, $position - $numberStart),
-                    sprintf('The float exponent at byte %d has no digits.', $start),
-                    'Write an exponent as d:1.0e10;.',
-                    contextStart: $start,
-                );
+                return $this->diagnostics->floatExponentWithoutDigits($numberStart, $position, $start);
             }
         }
 
@@ -315,14 +272,7 @@ class SerializedScanner
         $declared = $this->unsignedDigits($data, $length, $position);
 
         if ($declared === false) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $lengthStart,
-                max(1, $position - $lengthStart),
-                sprintf('The byte length at byte %d is not a number.', $lengthStart),
-                'Declare the length in digits, for example s:5:"hello";.',
-                contextStart: $tokenStart,
-            );
+            return $this->diagnostics->nonNumericStringLength($lengthStart, $position, $tokenStart);
         }
 
         $lengthEnd = $position;
@@ -350,14 +300,7 @@ class SerializedScanner
                 }
 
                 if ($cursor + 2 >= $length || ctype_xdigit($data[$cursor + 1]) === false || ctype_xdigit($data[$cursor + 2]) === false) {
-                    return new SyntaxDiagnostic(
-                        SyntaxErrorCode::MalformedNumber,
-                        $cursor,
-                        min(3, $length - $cursor),
-                        sprintf('The escape at byte %d is not two hexadecimal digits.', $cursor),
-                        'Escaped strings use \\41 style two-digit escapes.',
-                        contextStart: $tokenStart,
-                    );
+                    return $this->diagnostics->malformedEscape($cursor, $length, $tokenStart);
                 }
 
                 $cursor += 3;
@@ -416,52 +359,18 @@ class SerializedScanner
          * length that cannot be corrected.
          */
         if ($actual === null) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::UnexpectedEnd,
-                $contentStart,
-                $length - $contentStart,
-                sprintf(
-                    'The string starting at byte %d declares %d bytes and never closes.',
-                    $tokenStart,
-                    $declared,
-                ),
-                contextStart: $tokenStart,
-                expectedTerminatorOffset: $expectedTerminator,
-            );
+            return $this->diagnostics->unterminatedString($contentStart, $length, $tokenStart, $declared, $expectedTerminator);
         }
 
-        $suggestion = null;
-        $fix = null;
-
-        if ($fixPrefix !== null) {
-            $suggestion = sprintf('Change `%s%d:` to `%s%d:`.', $fixPrefix, $declared, $fixPrefix, $actual);
-            $fix = [
-                'offset' => $lengthStart,
-                'length' => $lengthEnd - $lengthStart,
-                'replacement' => (string) $actual,
-            ];
-        }
-
-        /**
-         * The span runs from the type marker through the closing quote, so the
-         * declared length and the bytes it fails to describe are framed together.
-         */
-        $lastByte = $contentStart + $actual;
-
-        return new SyntaxDiagnostic(
-            SyntaxErrorCode::StringLengthMismatch,
+        return $this->diagnostics->stringLengthMismatch(
             $tokenStart,
-            max(1, $lastByte - $tokenStart + 1),
-            sprintf(
-                'The string starting at byte %d declares %d bytes but %d bytes precede the closing quote.',
-                $tokenStart,
-                $declared,
-                $actual,
-            ),
-            $suggestion,
-            contextStart: $tokenStart,
-            expectedTerminatorOffset: $expectedTerminator,
-            fix: $fix,
+            $contentStart,
+            $declared,
+            $actual,
+            $lengthStart,
+            $lengthEnd,
+            $expectedTerminator,
+            $fixPrefix,
         );
     }
 
@@ -478,14 +387,7 @@ class SerializedScanner
         $declared = $this->unsignedDigits($data, $length, $position);
 
         if ($declared === false) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $countStart,
-                max(1, $position - $countStart),
-                sprintf('The element count at byte %d is not a number.', $countStart),
-                'Declare the count in digits, for example a:2:{...}.',
-                contextStart: $start,
-            );
+            return $this->diagnostics->nonNumericElementCount($countStart, $position, $start);
         }
 
         $countEnd = $position;
@@ -500,24 +402,7 @@ class SerializedScanner
 
         for ($seen = 0; $seen < $declared; $seen++) {
             if ($position < $length && $data[$position] === '}') {
-                return new SyntaxDiagnostic(
-                    SyntaxErrorCode::ArrayCountMismatch,
-                    $start,
-                    $position - $start + 1,
-                    sprintf(
-                        'The array starting at byte %d declares %d elements but contains %d.',
-                        $start,
-                        $declared,
-                        $seen,
-                    ),
-                    sprintf('Change `a:%d:` to `a:%d:`.', $declared, $seen),
-                    contextStart: $start,
-                    fix: [
-                        'offset' => $countStart,
-                        'length' => $countEnd - $countStart,
-                        'replacement' => (string) $seen,
-                    ],
-                );
+                return $this->diagnostics->arrayShorterThanDeclared($start, $position, $declared, $seen, $countStart, $countEnd);
             }
 
             $elementStart = $position;
@@ -532,11 +417,7 @@ class SerializedScanner
         }
 
         if ($position >= $length) {
-            return $this->unexpectedEnd(
-                $length,
-                $start,
-                sprintf('The array starting at byte %d is missing its closing brace.', $start),
-            );
+            return $this->diagnostics->arrayMissingClosingBrace($length, $start);
         }
 
         if ($data[$position] !== '}') {
@@ -588,30 +469,14 @@ class SerializedScanner
 
         $total = $counted && $cursor < $length ? $declared + $surplus : null;
 
-        return new SyntaxDiagnostic(
-            SyntaxErrorCode::ArrayCountMismatch,
+        return $this->diagnostics->arrayLongerThanDeclared(
             $position,
-            max(1, min($cursor, $length) - $position),
-            $total !== null
-                ? sprintf(
-                    'The array starting at byte %d declares %d elements but contains %d.',
-                    $start,
-                    $declared,
-                    $total,
-                )
-                : sprintf(
-                    'The array starting at byte %d declares %d elements but more follow at byte %d.',
-                    $start,
-                    $declared,
-                    $position,
-                ),
-            $total !== null ? sprintf('Change `a:%d:` to `a:%d:`.', $declared, $total) : null,
-            contextStart: $start,
-            fix: $total !== null ? [
-                'offset' => $countStart,
-                'length' => $countEnd - $countStart,
-                'replacement' => (string) $total,
-            ] : null,
+            min($cursor, $length),
+            $start,
+            $countStart,
+            $countEnd,
+            $declared,
+            $total,
         );
     }
 
@@ -625,7 +490,7 @@ class SerializedScanner
     private function arrayKey(string $data, int $length, int &$position, int $contextStart): ?SyntaxDiagnostic
     {
         if ($position >= $length) {
-            return $this->unexpectedEnd($length, $contextStart, 'The array ends where a key was expected.');
+            return $this->diagnostics->arrayEndedBeforeKey($length, $contextStart);
         }
 
         if ($data[$position] === 'i') {
@@ -640,16 +505,7 @@ class SerializedScanner
             return $this->string($data, $length, $position, true);
         }
 
-        $tokenEnd = strpos($data, ';', $position);
-
-        return new SyntaxDiagnostic(
-            SyntaxErrorCode::InvalidArrayKey,
-            $position,
-            $tokenEnd === false ? 1 : $tokenEnd - $position + 1,
-            sprintf('The array key at byte %d is neither an integer nor a string.', $position),
-            'Array keys use i: or s:.',
-            contextStart: $contextStart,
-        );
+        return $this->diagnostics->invalidArrayKey($position, strpos($data, ';', $position), $contextStart);
     }
 
     /**
@@ -679,14 +535,7 @@ class SerializedScanner
         $declared = $this->unsignedDigits($data, $length, $position);
 
         if ($declared === false) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $countStart,
-                max(1, $position - $countStart),
-                sprintf('The property count at byte %d is not a number.', $countStart),
-                'Declare the count in digits.',
-                contextStart: $start,
-            );
+            return $this->diagnostics->nonNumericPropertyCount($countStart, $position, $start);
         }
 
         if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
@@ -736,14 +585,7 @@ class SerializedScanner
         $bodyLength = $this->unsignedDigits($data, $length, $position);
 
         if ($bodyLength === false) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $position,
-                1,
-                sprintf('The payload length at byte %d is not a number.', $position),
-                'Declare the length in digits.',
-                contextStart: $start,
-            );
+            return $this->diagnostics->nonNumericPayloadLength($position, $start);
         }
 
         if (($delimiter = $this->delimiter($data, $length, $position, $start, ':')) !== null) {
@@ -757,7 +599,7 @@ class SerializedScanner
         $position += $bodyLength;
 
         if ($position >= $length) {
-            return $this->unexpectedEnd($length, $start, 'The custom-serialized payload ends before its closing brace.');
+            return $this->diagnostics->customObjectEndedBeforeBrace($length, $start);
         }
 
         return $this->delimiter($data, $length, $position, $start, '}');
@@ -800,33 +642,15 @@ class SerializedScanner
         $target = $this->unsignedDigits($data, $length, $position);
 
         if ($target === false) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $digitsStart,
-                max(1, $position - $digitsStart),
-                sprintf('The reference at byte %d has no target.', $start),
-                'References count values from 1, for example r:2;.',
-                contextStart: $start,
-            );
+            return $this->diagnostics->referenceWithoutTarget($digitsStart, $position, $start);
         }
 
         if (($terminator = $this->terminator($data, $length, $position, $start)) !== null) {
             return $terminator;
         }
 
-        /**
-         * The whole token is framed, because PHP accepts a reference token
-         * before deciding it points nowhere and then blames the byte after it.
-         */
         if ($target <= 0) {
-            return new SyntaxDiagnostic(
-                SyntaxErrorCode::MalformedNumber,
-                $start,
-                $position - $start,
-                sprintf('The reference at byte %d does not point at a value.', $start),
-                'References count values from 1, for example r:2;.',
-                contextStart: $start,
-            );
+            return $this->diagnostics->referenceToNothing($start, $position);
         }
 
         return null;
@@ -840,38 +664,16 @@ class SerializedScanner
     private function delimiter(string $data, int $length, int &$position, int $contextStart, string $byte): ?SyntaxDiagnostic
     {
         if ($position >= $length) {
-            return $this->unexpectedEnd(
-                $length,
-                $contextStart,
-                sprintf('The value ends before the expected "%s".', $byte),
-            );
+            return $this->diagnostics->endedBeforeByte($byte, $length, $contextStart);
         }
 
         if ($data[$position] !== $byte) {
-            return new SyntaxDiagnostic(
-                $byte === ';' ? SyntaxErrorCode::MissingTerminator : SyntaxErrorCode::MissingDelimiter,
-                $position,
-                1,
-                sprintf('A "%s" was expected at byte %d.', $byte, $position),
-                sprintf('Insert the missing "%s".', $byte),
-                contextStart: $contextStart,
-            );
+            return $this->diagnostics->missingByte($byte, $position, $contextStart);
         }
 
         $position++;
 
         return null;
-    }
-
-    private function unexpectedEnd(int $length, int $contextStart, string $message): SyntaxDiagnostic
-    {
-        return new SyntaxDiagnostic(
-            SyntaxErrorCode::UnexpectedEnd,
-            $length,
-            0,
-            $message,
-            contextStart: $contextStart,
-        );
     }
 
     /**
