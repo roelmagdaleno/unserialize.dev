@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Models\ConversionMetric;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -116,7 +117,7 @@ class UsageSummaryCommand extends Command
     private function latestSuccessfulUseByInterface(): Collection
     {
         $latest = ConversionMetric::query()
-            ->where('outcome', ConversionMetric::OUTCOME_SUCCESS)
+            ->where('outcome', ConversionOutcome::Success->value)
             ->groupBy('interface')
             ->select('interface', DB::raw('max(last_occurred_at) as last_occurred_at'))
             ->get()

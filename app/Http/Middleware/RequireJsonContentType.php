@@ -2,8 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Data\ConversionEnvelope;
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Http\Controllers\Api\V1\UnserializeController;
 use App\Services\ConversionTelemetry;
 use Closure;
@@ -26,7 +28,7 @@ readonly class RequireJsonContentType
         if (! $request->isJson()) {
             $this->telemetry->record(
                 ConversionInterface::Api,
-                'unsupported_media_type',
+                ConversionOutcome::UnsupportedMediaType,
                 strlen($request->getContent()),
                 $startedAt,
                 null,
@@ -37,12 +39,10 @@ readonly class RequireJsonContentType
                 ),
             );
 
-            return response()->json([
-                'error' => [
-                    'code' => 'unsupported_media_type',
-                    'message' => 'Content-Type must be application/json.',
-                ],
-            ], 415);
+            return response()->json(ConversionEnvelope::error(
+                ConversionOutcome::UnsupportedMediaType->value,
+                'Content-Type must be application/json.',
+            ), 415);
         }
 
         return $next($request);

@@ -69,6 +69,13 @@ it('shows specific feedback for serialized objects without persistence', functio
 });
 
 it('blocks the eleventh conversion attempt for an IP address', function () {
+    /**
+     * The assertion names an exact countdown, so the clock is frozen. Without
+     * this the window opens on the first attempt and the ten that follow can
+     * carry it past a whole second, leaving the message reading 59.
+     */
+    $this->freezeTime();
+
     foreach (range(1, 10) as $attempt) {
         Livewire::test(Serialized::class)
             ->set('form.serializedData', 'invalid')

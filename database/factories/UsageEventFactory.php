@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Enums\SyntaxErrorCode;
 use App\Enums\UsageEventType;
 use App\Mcp\Tools\ConvertSerializedDataTool;
@@ -27,7 +28,7 @@ class UsageEventFactory extends Factory
             'occurred_at' => now()->utc(),
             'interface' => ConversionInterface::Browser,
             'event' => UsageEventType::ConversionCompleted,
-            'outcome' => 'success',
+            'outcome' => ConversionOutcome::Success->value,
             'duration_ms' => fake()->randomFloat(3, 0, 500),
             'input_size_bucket' => fake()->randomElement(['0-1KiB', '1-16KiB', '16-64KiB']),
             'diagnostic' => null,

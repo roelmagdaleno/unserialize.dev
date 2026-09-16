@@ -2,6 +2,7 @@
 
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Enums\SyntaxErrorCode;
 use App\Enums\UsageEventType;
 use App\Livewire\Serialized;
@@ -20,7 +21,7 @@ use Livewire\Livewire;
 it('records one event and one aggregate for a single conversion', function () {
     $this->travelTo('2026-09-15 10:30:00');
 
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::Success, 2048, hrtime(true));
 
     $this->assertDatabaseCount('usage_events', 1);
     $this->assertDatabaseCount('conversion_metrics', 1);
@@ -37,7 +38,7 @@ it('records one event and one aggregate for a single conversion', function () {
 it('stores only the allowlisted columns', function () {
     app(ConversionTelemetry::class)->record(
         ConversionInterface::Browser,
-        'invalid_input',
+        ConversionOutcome::InvalidInput,
         2048,
         hrtime(true),
         SyntaxErrorCode::StringLengthMismatch,
@@ -68,7 +69,7 @@ it('stores only the allowlisted columns', function () {
 it('records the diagnostic category without anything measured from the payload', function () {
     app(ConversionTelemetry::class)->record(
         ConversionInterface::Browser,
-        'invalid_input',
+        ConversionOutcome::InvalidInput,
         2048,
         hrtime(true),
         SyntaxErrorCode::StringLengthMismatch,
@@ -83,7 +84,7 @@ it('records the diagnostic category without anything measured from the payload',
 it('normalizes the untrusted metadata it is given before storing it', function () {
     app(ConversionTelemetry::class)->record(
         ConversionInterface::Api,
-        'success',
+        ConversionOutcome::Success,
         2048,
         hrtime(true),
         null,
@@ -102,7 +103,7 @@ it('normalizes the untrusted metadata it is given before storing it', function (
 });
 
 it('stores null metadata when the caller supplies no context', function () {
-    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, ConversionOutcome::Success, 2048, hrtime(true));
 
     $event = UsageEvent::query()->sole();
 
@@ -122,7 +123,7 @@ it('still counts the aggregate when the event write fails', function () {
     Log::spy();
     Schema::drop('usage_events');
 
-    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, ConversionOutcome::Success, 2048, hrtime(true));
 
     $this->assertDatabaseCount('conversion_metrics', 1);
     Log::shouldHaveReceived('warning')->once()->withArgs(function (string $message, array $context): bool {
@@ -142,7 +143,7 @@ it('keeps the recorded event when the aggregate write fails', function () {
     Log::spy();
     Schema::drop('conversion_metrics');
 
-    app(ConversionTelemetry::class)->record(ConversionInterface::Browser, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Browser, ConversionOutcome::Success, 2048, hrtime(true));
 
     $this->assertDatabaseCount('usage_events', 1);
     Log::shouldHaveReceived('warning')->once()->withArgs(

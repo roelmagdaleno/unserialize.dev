@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\Enums\ConversionErrorCode;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,8 +20,6 @@ class ConversionMetric extends Model
 {
     use HasFactory;
 
-    public const string OUTCOME_SUCCESS = 'success';
-
     protected $fillable = [
         'date',
         'interface',
@@ -35,7 +33,7 @@ class ConversionMetric extends Model
      */
     public static function recordOccurrence(
         ConversionInterface $interface,
-        string $outcome,
+        ConversionOutcome $outcome,
         CarbonImmutable $occurredAt,
     ): void {
         $occurredAt = $occurredAt->utc();
@@ -43,7 +41,7 @@ class ConversionMetric extends Model
         static::query()->upsert([[
             'date' => $occurredAt->toDateString(),
             'interface' => $interface->value,
-            'outcome' => $outcome,
+            'outcome' => $outcome->value,
             'count' => 1,
             'last_occurred_at' => $occurredAt,
         ]], ['date', 'interface', 'outcome'], [
@@ -59,16 +57,10 @@ class ConversionMetric extends Model
      */
     public static function outcomes(): array
     {
-        return [
-            self::OUTCOME_SUCCESS,
-            'rate_limited',
-            'unsupported_media_type',
-            'validation_error',
-            ...array_map(
-                static fn (ConversionErrorCode $code): string => $code->value,
-                ConversionErrorCode::cases(),
-            ),
-        ];
+        return array_map(
+            static fn (ConversionOutcome $outcome): string => $outcome->value,
+            ConversionOutcome::cases(),
+        );
     }
 
     /**

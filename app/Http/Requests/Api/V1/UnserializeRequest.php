@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Api\V1;
 
+use App\Data\ConversionEnvelope;
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Http\Controllers\Api\V1\UnserializeController;
 use App\Services\ConversionTelemetry;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -56,7 +58,7 @@ class UnserializeRequest extends FormRequest
     {
         app(ConversionTelemetry::class)->record(
             ConversionInterface::Api,
-            'validation_error',
+            ConversionOutcome::ValidationError,
             strlen((string) $this->input('serialized', '')),
             $this->telemetryStartedAt,
             null,
@@ -67,13 +69,11 @@ class UnserializeRequest extends FormRequest
             ),
         );
 
-        throw new HttpResponseException(response()->json([
-            'error' => [
-                'code' => 'validation_error',
-                'message' => 'The request data is invalid.',
-                'details' => $validator->errors()->toArray(),
-            ],
-        ], 422));
+        throw new HttpResponseException(response()->json(ConversionEnvelope::error(
+            ConversionOutcome::ValidationError->value,
+            'The request data is invalid.',
+            details: $validator->errors()->toArray(),
+        ), 422));
     }
 
     protected function prepareForValidation(): void

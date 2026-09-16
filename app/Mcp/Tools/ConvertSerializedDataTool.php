@@ -2,9 +2,11 @@
 
 namespace App\Mcp\Tools;
 
+use App\Data\ConversionEnvelope;
 use App\Data\UsageContext;
 use App\Enums\ConversionErrorCode;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Enums\SyntaxErrorCode;
 use App\Exceptions\ConversionException;
 use App\Services\ConversionTelemetry;
@@ -83,7 +85,7 @@ class ConvertSerializedDataTool extends Tool
         if (array_keys($arguments) !== ['serialized'] || ! is_string($arguments['serialized'])) {
             $telemetry->record(
                 ConversionInterface::Mcp,
-                'validation_error',
+                ConversionOutcome::ValidationError,
                 $inputBytes,
                 $startedAt,
                 null,
@@ -98,7 +100,7 @@ class ConvertSerializedDataTool extends Tool
         } catch (ConversionException $exception) {
             $telemetry->record(
                 ConversionInterface::Mcp,
-                $exception->errorCode->value,
+                ConversionOutcome::fromErrorCode($exception->errorCode),
                 $inputBytes,
                 $startedAt,
                 $exception->diagnostic?->code,
@@ -114,20 +116,14 @@ class ConvertSerializedDataTool extends Tool
 
         $telemetry->record(
             ConversionInterface::Mcp,
-            'success',
+            ConversionOutcome::Success,
             $inputBytes,
             $startedAt,
             null,
             $context(UsageContext::resultTypeFor($result->value)),
         );
 
-        return Response::structured([
-            'data' => [
-                'value' => $result->value,
-                'format' => 'json',
-            ],
-            'meta' => ['retained' => false],
-        ]);
+        return Response::structured(ConversionEnvelope::success($result->value));
     }
 
     /**
@@ -140,7 +136,10 @@ class ConvertSerializedDataTool extends Tool
         return [
             'serialized' => $schema->string()
                 ->max(Serialized::MAX_INPUT_BYTES)
-                ->description('A PHP serialized value. Maximum 262144 bytes. Serialized objects are not supported.')
+                ->description(sprintf(
+                    'A PHP serialized value. Maximum %d bytes. Serialized objects are not supported.',
+                    Serialized::MAX_INPUT_BYTES,
+                ))
                 ->required(),
         ];
     }
@@ -187,13 +186,7 @@ class ConvertSerializedDataTool extends Tool
      */
     private function error(string $code, string $message, ?array $diagnostic = null): ResponseFactory
     {
-        $error = [
-            'error' => array_filter([
-                'code' => $code,
-                'message' => $message,
-                'diagnostic' => $diagnostic,
-            ], static fn (mixed $value): bool => $value !== null),
-        ];
+        $error = ConversionEnvelope::error($code, $message, $diagnostic);
 
         return Response::make(Response::error((string) json_encode($error, JSON_UNESCAPED_SLASHES)))
             ->withStructuredContent($error);

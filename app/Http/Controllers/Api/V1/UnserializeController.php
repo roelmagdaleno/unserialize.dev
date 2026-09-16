@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Data\ConversionEnvelope;
 use App\Data\UsageContext;
 use App\Enums\ConversionErrorCode;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Exceptions\ConversionException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\UnserializeRequest;
@@ -39,34 +41,23 @@ class UnserializeController extends Controller
 
             $telemetry->record(
                 ConversionInterface::Api,
-                $exception->errorCode->value,
+                ConversionOutcome::fromErrorCode($exception->errorCode),
                 strlen($serialized),
                 $startedAt,
                 $exception->diagnostic?->code,
                 UsageContext::fromRequest($request, apiVersion: self::API_VERSION, httpStatus: $status),
             );
 
-            /**
-             * The diagnostic goes under its own key rather than `details`, which
-             * this envelope already uses for the validation field map. No
-             * submitted bytes are returned: the caller holds the value it sent,
-             * so `offset` and `length` locate the problem on their own.
-             */
-            $error = [
-                'code' => $exception->errorCode->value,
-                'message' => $exception->getMessage(),
-            ];
-
-            if ($exception->diagnostic !== null) {
-                $error['diagnostic'] = $exception->diagnostic->toArray();
-            }
-
-            return response()->json(['error' => $error], $status);
+            return response()->json(ConversionEnvelope::error(
+                $exception->errorCode->value,
+                $exception->getMessage(),
+                $exception->diagnostic?->toArray(),
+            ), $status);
         }
 
         $telemetry->record(
             ConversionInterface::Api,
-            'success',
+            ConversionOutcome::Success,
             strlen($serialized),
             $startedAt,
             null,
@@ -78,12 +69,6 @@ class UnserializeController extends Controller
             ),
         );
 
-        return response()->json([
-            'data' => [
-                'value' => $result->value,
-                'format' => 'json',
-            ],
-            'meta' => ['retained' => false],
-        ]);
+        return response()->json(ConversionEnvelope::success($result->value));
     }
 }

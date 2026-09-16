@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Services\Serialized;
+
 enum ConversionErrorCode: string
 {
     case DepthLimitExceeded = 'depth_limit_exceeded';
@@ -15,7 +17,10 @@ enum ConversionErrorCode: string
         return match ($this) {
             self::DepthLimitExceeded => 'The serialized data nests too deeply to convert.',
             self::EncodingFailed => 'Failed to encode the serialized data to JSON.',
-            self::InputTooLarge => 'The serialized data must not be greater than 262,144 bytes.',
+            self::InputTooLarge => sprintf(
+                'The serialized data must not be greater than %s bytes.',
+                number_format(Serialized::MAX_INPUT_BYTES),
+            ),
             self::InvalidInput => 'Invalid serialized data.',
             self::UnsupportedObject => 'Serialized objects are not supported.',
         };

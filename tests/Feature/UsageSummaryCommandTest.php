@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Models\ConversionMetric;
 use Illuminate\Support\Facades\Artisan;
 
@@ -10,9 +11,9 @@ use Illuminate\Support\Facades\Artisan;
  */
 function seedAggregates(): void
 {
-    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Browser, 'success')->counted(12)->create();
-    ConversionMetric::factory()->on('2026-09-15', ConversionInterface::Api, 'success')->counted(3)->create();
-    ConversionMetric::factory()->on('2026-09-15', ConversionInterface::Api, 'invalid_input')->counted(2)->create();
+    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Browser, ConversionOutcome::Success)->counted(12)->create();
+    ConversionMetric::factory()->on('2026-09-15', ConversionInterface::Api, ConversionOutcome::Success)->counted(3)->create();
+    ConversionMetric::factory()->on('2026-09-15', ConversionInterface::Api, ConversionOutcome::InvalidInput)->counted(2)->create();
 }
 
 it('reports every recorded aggregate when no filter is given', function () {
@@ -29,8 +30,8 @@ it('reports every recorded aggregate when no filter is given', function () {
 
 it('keeps the aggregates on both boundary days of a date range', function () {
     seedAggregates();
-    ConversionMetric::factory()->on('2026-09-16', ConversionInterface::Mcp, 'success')->create();
-    ConversionMetric::factory()->on('2026-09-13', ConversionInterface::Mcp, 'success')->create();
+    ConversionMetric::factory()->on('2026-09-16', ConversionInterface::Mcp, ConversionOutcome::Success)->create();
+    ConversionMetric::factory()->on('2026-09-13', ConversionInterface::Mcp, ConversionOutcome::Success)->create();
 
     $this->artisan('usage:summary', ['--from' => '2026-09-14', '--to' => '2026-09-15'])
         ->expectsTable(['Date (UTC)', 'Interface', 'Outcome', 'Count', 'Last Occurred At (UTC)'], [
@@ -77,7 +78,7 @@ it('reports the latest successful use overall and for each interface', function 
  * all, so it reads the whole history rather than the report's date range.
  */
 it('reports the latest successful use from outside the requested date range', function () {
-    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Api, 'success')->create();
+    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Api, ConversionOutcome::Success)->create();
 
     $summary = jsonSummary(['--from' => '2026-09-20', '--to' => '2026-09-21']);
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Enums\SyntaxErrorCode;
 use App\Enums\UsageEventType;
 use App\Models\ConversionMetric;
@@ -36,7 +37,7 @@ readonly class ConversionTelemetry
      */
     public function record(
         ConversionInterface $interface,
-        string $outcome,
+        ConversionOutcome $outcome,
         int $inputBytes,
         int $startedAt,
         ?SyntaxErrorCode $diagnostic = null,
@@ -47,7 +48,7 @@ readonly class ConversionTelemetry
 
         Log::info('conversion.completed', array_filter([
             'interface' => $interface->value,
-            'outcome' => $outcome,
+            'outcome' => $outcome->value,
             'duration_ms' => $durationMs,
             'input_size_bucket' => $inputSizeBucket,
             'diagnostic' => $diagnostic?->value,
@@ -80,14 +81,14 @@ readonly class ConversionTelemetry
      * Nothing derived from the submitted value is passed on: the input size
      * bucket and the diagnostic category stay in the short-lived log only.
      */
-    private function recordAggregate(ConversionInterface $interface, string $outcome): void
+    private function recordAggregate(ConversionInterface $interface, ConversionOutcome $outcome): void
     {
         try {
             ConversionMetric::recordOccurrence($interface, $outcome, CarbonImmutable::now('UTC'));
         } catch (Throwable $exception) {
             Log::warning('conversion.metrics_write_failed', [
                 'interface' => $interface->value,
-                'outcome' => $outcome,
+                'outcome' => $outcome->value,
                 'exception' => $exception::class,
             ]);
         }

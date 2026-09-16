@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\ConversionResult;
 use App\Data\EngineOutcome;
+use App\Data\SyntaxDiagnostic;
 use App\Enums\ConversionErrorCode;
 use App\Enums\EngineFailureKind;
 use App\Exceptions\ConversionException;
@@ -15,11 +16,25 @@ class Serialized
 {
     public const int MAX_INPUT_BYTES = 262144;
 
+    /**
+     * The ceiling handed to `unserialize()`.
+     *
+     * Deliberately below {@see SerializedScanner::MAX_DEPTH}. PHP is what
+     * decides a payload nests too deeply, and the scanner has to still be
+     * scanning at that point in order to explain where. Raising this above the
+     * scanner's limit would leave a depth failure with no explanation.
+     */
     public const int MAX_DEPTH = 512;
 
     private bool $hasDecoded = false;
 
     private mixed $decodedData;
+
+    /**
+     * The failure this payload already produced, kept so a second call does not
+     * re-run `unserialize()` and a full scan to reach the same conclusion.
+     */
+    private ?ConversionException $failure = null;
 
     /**
      * Serialized constructor.
@@ -40,11 +55,11 @@ class Serialized
     }
 
     /**
-     * Output the serialized data.
+     * Output the serialized data as JSON.
      *
      * @since 1.0.0
      *
-     * @throws Exception If the serialized data is invalid.
+     * @throws ConversionException If the serialized data cannot be converted.
      */
     public function output(): string
     {
@@ -71,34 +86,6 @@ class Serialized
     }
 
     /**
-     * Transform the serialized data to a JSON string.
-     *
-     * @since 1.0.0
-     *
-     * @throws Exception If the serialized data is invalid.
-     */
-    public function toJson(): string
-    {
-        return $this->convert()->json;
-    }
-
-    /**
-     * Check if the serialized data is valid.
-     *
-     * @since 1.0.0
-     */
-    public function isValid(): bool
-    {
-        try {
-            $this->decode();
-        } catch (ConversionException) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Safely decode the serialized value once.
      *
      * @throws ConversionException If the serialized data cannot be converted.
@@ -109,8 +96,12 @@ class Serialized
             return $this->decodedData;
         }
 
+        if ($this->failure !== null) {
+            throw $this->failure;
+        }
+
         if (strlen($this->serializedData) > self::MAX_INPUT_BYTES) {
-            throw new ConversionException(ConversionErrorCode::InputTooLarge);
+            throw $this->fail(ConversionErrorCode::InputTooLarge);
         }
 
         /**
@@ -145,18 +136,18 @@ class Serialized
             : EngineOutcome::fromWarnings($warnings, $decodedData, $this->serializedData);
 
         if ($engine->kind === EngineFailureKind::ObjectUnserializer) {
-            throw new ConversionException(ConversionErrorCode::UnsupportedObject);
+            throw $this->fail(ConversionErrorCode::UnsupportedObject);
         }
 
         if ($engine->kind === EngineFailureKind::DepthExceeded) {
-            throw new ConversionException(
+            throw $this->fail(
                 ConversionErrorCode::DepthLimitExceeded,
                 $this->diagnostics()->diagnose($this->serializedData, $engine),
             );
         }
 
         if ($engine->failed()) {
-            throw new ConversionException(
+            throw $this->fail(
                 ConversionErrorCode::InvalidInput,
                 $this->diagnostics()->diagnose($this->serializedData, $engine),
             );
@@ -165,13 +156,22 @@ class Serialized
         $visitedReferences = [];
 
         if ($this->containsObject($decodedData, $visitedReferences)) {
-            throw new ConversionException(ConversionErrorCode::UnsupportedObject);
+            throw $this->fail(ConversionErrorCode::UnsupportedObject);
         }
 
         $this->decodedData = $decodedData;
         $this->hasDecoded = true;
 
         return $this->decodedData;
+    }
+
+    /**
+     * Remember why this payload could not be converted, and hand back the
+     * exception for the caller to throw.
+     */
+    private function fail(ConversionErrorCode $errorCode, ?SyntaxDiagnostic $diagnostic = null): ConversionException
+    {
+        return $this->failure = new ConversionException($errorCode, $diagnostic);
     }
 
     /**

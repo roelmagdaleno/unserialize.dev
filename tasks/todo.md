@@ -45,16 +45,21 @@ Plan completo con criterios de aceptación y verificación: [tasks/plan.md](plan
 
 ## Phase 3: Duplicación transversal
 
-- [ ] **Tarea 13** — Tipar el vocabulario de outcome (`App\Enums\ConversionOutcome`) · M · deps: Checkpoint C
-- [ ] **Tarea 14** — Deduplicar rate limiting (triplicado hoy) · M · deps: T13
-- [ ] **Tarea 15** — Unificar sobres de respuesta API/MCP · M · deps: T14
-- [ ] **Tarea 16** — Una sola fuente para `MAX_INPUT_BYTES` + test guarda · S · deps: T15
-- [ ] **Tarea 17** — Colapsar los 4 witters de `SyntaxDiagnostic` · S · deps: T16
-- [ ] **Tarea 18** — Limpieza de código muerto y deuda menor · S · deps: T17
+- [x] **Tarea 13** — Tipar el vocabulario de outcome (`App\Enums\ConversionOutcome`) · M · deps: Checkpoint C
+- [x] **Tarea 14** — Deduplicar rate limiting (triplicado hoy) · M · deps: T13
+- [x] **Tarea 15** — Unificar sobres de respuesta API/MCP · M · deps: T14
+- [x] **Tarea 16** — Una sola fuente para `MAX_INPUT_BYTES` + test guarda · S · deps: T15
+- [x] **Tarea 17** — Colapsar los 4 witters de `SyntaxDiagnostic` · S · deps: T16
+- [x] **Tarea 18** — Limpieza de código muerto y deuda menor · S · deps: T17
 
 ### ✅ Checkpoint D — Completo
-- [ ] `vendor/bin/pest` completo verde (219 declaraciones)
-- [ ] `vendor/bin/pint --test`
-- [ ] `diff` de golden vacío
-- [ ] `REFACTOR-REPORT.md` actualizado marcando lo hecho
+- [x] `vendor/bin/pest`: 491 pasan en 3 corridas seguidas; 1 fallo preexistente y no relacionado (`ContentPagesTest`, depende del dev server de Vite)
+- [x] `vendor/bin/pint --dirty` limpio (`--test` señala drift preexistente en `UserFactory`, `bootstrap/providers.php`, `config/auth.php`: archivos que este trabajo no tocó)
+- [x] `diff` de golden vacío
+- [x] Rendimiento: 19.19 ms vs 20.23 ms base
+- [x] `REFACTOR-REPORT.md` actualizado
 - [ ] Revisión humana
+
+### Hallazgo extra durante la ejecución
+- [x] `UnserializeTest > blocks the eleventh conversion attempt` era **flaky antes de este trabajo** (1 de 6 corridas): afirma una cuenta atrás exacta de 60 s, y la ventana podía cruzar un segundo entero. Fase 3 lo empeoró a 3 de 6 al añadir resolución de contenedor por iteración. Arreglado con `$this->freezeTime()`: 8 de 8.
+- [ ] Pendiente decidir: el `beforeEach` de `UnserializeTest.php:8` reconstruye a mano `'unserialize:'.hash('sha256', '127.0.0.1')`, la misma derivación que ahora vive en `ConversionRateLimiter::key()`. Es la última copia de esa lógica.

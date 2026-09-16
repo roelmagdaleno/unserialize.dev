@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Models\ConversionMetric;
 use App\Models\UsageEvent;
 use Illuminate\Console\Scheduling\Event;
@@ -46,7 +47,7 @@ it('follows the configured retention window rather than a fixed one', function (
 it('deletes nothing more on a second run and never touches conversion aggregates', function () {
     UsageEvent::factory()->occurredAt('2026-08-01 12:00:00')->create();
     UsageEvent::factory()->occurredAt('2026-09-15 11:00:00')->create();
-    ConversionMetric::factory()->on('2026-08-01', ConversionInterface::Browser, 'success')->counted(5)->create();
+    ConversionMetric::factory()->on('2026-08-01', ConversionInterface::Browser, ConversionOutcome::Success)->counted(5)->create();
 
     $this->artisan('model:prune', ['--model' => [UsageEvent::class]])->assertSuccessful();
     $this->artisan('model:prune', ['--model' => [UsageEvent::class]])->assertSuccessful();

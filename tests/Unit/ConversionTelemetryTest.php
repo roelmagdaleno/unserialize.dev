@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Enums\SyntaxErrorCode;
 use App\Models\ConversionMetric;
 use App\Services\ConversionTelemetry;
@@ -21,7 +22,7 @@ test('conversion telemetry records only bounded operational fields', function ()
 
     app(ConversionTelemetry::class)->record(
         ConversionInterface::Api,
-        'unsupported_object',
+        ConversionOutcome::UnsupportedObject,
         2048,
         hrtime(true),
     );
@@ -44,7 +45,7 @@ test('conversion telemetry records the diagnostic category and nothing measured 
 
     app(ConversionTelemetry::class)->record(
         ConversionInterface::Browser,
-        'invalid_input',
+        ConversionOutcome::InvalidInput,
         2048,
         hrtime(true),
         SyntaxErrorCode::StringLengthMismatch,
@@ -66,7 +67,7 @@ test('conversion telemetry records the diagnostic category and nothing measured 
 test('input sizes are recorded as buckets instead of exact values', function (int $bytes, string $bucket) {
     Log::spy();
 
-    app(ConversionTelemetry::class)->record(ConversionInterface::Browser, 'success', $bytes, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Browser, ConversionOutcome::Success, $bytes, hrtime(true));
 
     Log::shouldHaveReceived('info')->withArgs(
         fn (string $message, array $context): bool => $context['input_size_bucket'] === $bucket,
@@ -87,7 +88,7 @@ test('nightwatch cannot capture conversion request bodies', function () {
 test('a first conversion creates one daily aggregate holding a single occurrence', function () {
     $this->travelTo('2026-09-14 08:15:30');
 
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::Success, 2048, hrtime(true));
 
     $this->assertDatabaseCount('conversion_metrics', 1);
     $this->assertDatabaseHas('conversion_metrics', [
@@ -101,10 +102,10 @@ test('a first conversion creates one daily aggregate holding a single occurrence
 
 test('a repeated conversion increments the same aggregate and advances its latest occurrence', function () {
     $this->travelTo('2026-09-14 08:15:30');
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::Success, 2048, hrtime(true));
 
     $this->travelTo('2026-09-14 19:45:00');
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 4096, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::Success, 4096, hrtime(true));
 
     $this->assertDatabaseCount('conversion_metrics', 1);
     $this->assertDatabaseHas('conversion_metrics', [
@@ -120,10 +121,10 @@ test('a repeated conversion increments the same aggregate and advances its lates
  */
 test('an occurrence recorded out of order does not move the latest occurrence backwards', function () {
     $this->travelTo('2026-09-14 19:45:00');
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::Success, 2048, hrtime(true));
 
     $this->travelTo('2026-09-14 08:15:30');
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::Success, 2048, hrtime(true));
 
     $this->assertDatabaseHas('conversion_metrics', [
         'count' => 2,
@@ -133,27 +134,27 @@ test('an occurrence recorded out of order does not move the latest occurrence ba
 
 test('a different day, interface, or outcome is counted as a separate aggregate', function () {
     $this->travelTo('2026-09-14 08:15:30');
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::Success, 2048, hrtime(true));
 
     $this->travelTo('2026-09-15 08:15:30');
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'success', 2048, hrtime(true));
-    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, 'success', 2048, hrtime(true));
-    app(ConversionTelemetry::class)->record(ConversionInterface::Api, 'invalid_input', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::Success, 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, ConversionOutcome::Success, 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Api, ConversionOutcome::InvalidInput, 2048, hrtime(true));
 
     $this->assertDatabaseCount('conversion_metrics', 4);
     expect((int) ConversionMetric::query()->sum('count'))->toBe(4);
 });
 
 test('the aggregate key cannot hold two rows for the same day, interface, and outcome', function () {
-    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Api, 'success')->create();
+    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Api, ConversionOutcome::Success)->create();
 
-    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Api, 'success')->create();
+    ConversionMetric::factory()->on('2026-09-14', ConversionInterface::Api, ConversionOutcome::Success)->create();
 })->throws(QueryException::class);
 
 test('a durable aggregate stores only the allowed fields', function () {
     app(ConversionTelemetry::class)->record(
         ConversionInterface::Browser,
-        'invalid_input',
+        ConversionOutcome::InvalidInput,
         2048,
         hrtime(true),
         SyntaxErrorCode::StringLengthMismatch,
@@ -180,7 +181,7 @@ test('a failed metrics write is logged without failing the conversion', function
     Log::spy();
     Schema::drop('conversion_metrics');
 
-    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, 'success', 2048, hrtime(true));
+    app(ConversionTelemetry::class)->record(ConversionInterface::Mcp, ConversionOutcome::Success, 2048, hrtime(true));
 
     Log::shouldHaveReceived('info')->once()->withArgs(
         fn (string $message): bool => $message === 'conversion.completed',

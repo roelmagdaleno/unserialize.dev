@@ -4,9 +4,11 @@ namespace App\Livewire;
 
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Enums\UsageEventType;
 use App\Exceptions\ConversionException;
 use App\Livewire\Forms\SerializedForm;
+use App\Services\ConversionRateLimiter;
 use App\Services\ConversionTelemetry;
 use App\Services\DiagnosticPresenter;
 use App\Services\UsageEventRecorder;
@@ -29,8 +31,6 @@ class Serialized extends Component
      * @since 1.0.0
      */
     public const string META_DESCRIPTION = 'Convert PHP serialized data to readable JSON without storing your input. Includes tested mappings, limits, and object-safety guidance.';
-
-    private const int MAX_ATTEMPTS = 10;
 
     /**
      * The status a Livewire update answers with.
@@ -109,12 +109,16 @@ class Serialized extends Component
      *
      * @since 1.0.0
      */
-    public function unserialize(Request $request, ConversionTelemetry $telemetry, DiagnosticPresenter $presenter): void
-    {
+    public function unserialize(
+        Request $request,
+        ConversionTelemetry $telemetry,
+        DiagnosticPresenter $presenter,
+        ConversionRateLimiter $limiter,
+    ): void {
         $this->diagnostic = null;
         $startedAt = hrtime(true);
         $inputBytes = strlen($this->form->serializedData);
-        $rateLimitKey = 'unserialize:'.hash('sha256', $request->ip());
+        $rateLimitKey = 'unserialize:'.$limiter->key($request);
 
         /**
          * A browser conversion is an XHR, so the observed request URL is
@@ -127,15 +131,9 @@ class Serialized extends Component
             resultType: $resultType,
         );
 
-        if (RateLimiter::tooManyAttempts($rateLimitKey, self::MAX_ATTEMPTS)) {
-            $telemetry->record(
-                ConversionInterface::Browser,
-                'rate_limited',
-                $inputBytes,
-                $startedAt,
-                null,
-                $context(),
-            );
+        if (RateLimiter::tooManyAttempts($rateLimitKey, $limiter->attemptsPerMinute())) {
+            $limiter->reject(ConversionInterface::Browser, $inputBytes, $startedAt, $context());
+
             $seconds = RateLimiter::availableIn($rateLimitKey);
             $this->addError(
                 'form.serializedData',
@@ -152,7 +150,7 @@ class Serialized extends Component
             $this->result = $conversion->json;
             $telemetry->record(
                 ConversionInterface::Browser,
-                'success',
+                ConversionOutcome::Success,
                 $inputBytes,
                 $startedAt,
                 null,
@@ -161,7 +159,7 @@ class Serialized extends Component
         } catch (ValidationException $exception) {
             $telemetry->record(
                 ConversionInterface::Browser,
-                'validation_error',
+                ConversionOutcome::ValidationError,
                 $inputBytes,
                 $startedAt,
                 null,
@@ -172,7 +170,7 @@ class Serialized extends Component
         } catch (ConversionException $exception) {
             $telemetry->record(
                 ConversionInterface::Browser,
-                $exception->errorCode->value,
+                ConversionOutcome::fromErrorCode($exception->errorCode),
                 $inputBytes,
                 $startedAt,
                 $exception->diagnostic?->code,

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Enums\SyntaxErrorCode;
 use App\Enums\UsageEventType;
 use App\Models\UsageEvent;
@@ -35,7 +36,7 @@ readonly class UsageEventRecorder
         ConversionInterface $interface,
         UsageEventType $event,
         ?UsageContext $context = null,
-        ?string $outcome = null,
+        ?ConversionOutcome $outcome = null,
         ?float $durationMs = null,
         ?string $inputSizeBucket = null,
         ?SyntaxErrorCode $diagnostic = null,
@@ -46,7 +47,7 @@ readonly class UsageEventRecorder
             $usageEvent->occurred_at = CarbonImmutable::now('UTC');
             $usageEvent->interface = $interface;
             $usageEvent->event = $event;
-            $usageEvent->outcome = $outcome;
+            $usageEvent->outcome = $outcome?->value;
             $usageEvent->duration_ms = $durationMs;
             $usageEvent->input_size_bucket = $inputSizeBucket;
             $usageEvent->diagnostic = $diagnostic?->value;
@@ -65,7 +66,7 @@ readonly class UsageEventRecorder
             Log::warning('usage.event_write_failed', [
                 'interface' => $interface->value,
                 'event' => $event->value,
-                'outcome' => $outcome,
+                'outcome' => $outcome?->value,
                 'exception' => $exception::class,
             ]);
         }

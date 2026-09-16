@@ -57,6 +57,30 @@ El scanner no es código interno: parte de su salida está copiada en artefactos
 - **`fix` debe seguir siendo `{offset, length, replacement}`** — `SerializedDiagnostics::verifySuggestion()` (`:129-134`) y dos tests lo aplican directamente con `substr_replace`.
 - **`claimInterval()` es la bisagra** entre el scanner y el reconciliador. Estrechar `contextStart` o dejar de propagar `expectedTerminatorOffset` voltea Exact→Approximate en inputs reales, lo que **degrada silenciosamente cada sugerencia**.
 
+## Estado de ejecución
+
+Las tres fases están aplicadas en la rama `refactor/scanner-maintainability`. Comportamiento sin cambios, verificado contra la línea base de caracterización (7.085 hashes sobre 25 semillas, `diff` vacío en cada paso).
+
+| Fase | Resultado |
+|---|---|
+| 1 — copy fuera de la gramática | 22 construcciones inline → 0. `SyntaxDiagnosticFactory` (436 líneas) posee cada mensaje, sugerencia y `fix`. |
+| 2 — cursor explícito | `ScannerCursor` (64 líneas) sustituye el threading por referencia. `surplusElements()` pasó de 9 parámetros a 6, con `fork()` haciendo explícito el descarte del lookahead. Scanner 902 → 719 líneas. |
+| 3 — duplicación transversal | `ConversionOutcome` (9 casos) sustituye los strings sueltos; `ConversionRateLimiter` sustituye las 3 copias; `ConversionEnvelope` sustituye los sobres duplicados; el límite de bytes se deriva de la constante y tiene test guarda; los 4 witters de `SyntaxDiagnostic` colapsan en uno; `SerializedRule`, `isValid()` y `toJson()` borrados. |
+
+**Rendimiento**: un payload de 256 KB escanea en 19,2 ms frente a 20,2 ms antes del refactor.
+
+**Nota honesta sobre el tamaño**: el scanner bajó de 902 a 719 líneas, no a las ~480 que estimé al planear. El threading por referencia se sustituyó, pero las llamadas a la factory ocupan varias líneas cada una. El total de código **creció**: la meta era mantenibilidad, no menos líneas, y conviene decirlo tal cual.
+
+### Hallazgo no planeado
+
+`UnserializeTest > blocks the eleventh conversion attempt` ya era **flaky antes de este trabajo** (1 de cada 6 corridas). Afirma una cuenta atrás exacta de 60 segundos, y la ventana del rate limiter podía cruzar un segundo entero durante las diez iteraciones previas. La Fase 3 lo empeoró a 3 de 6 al añadir resolución de contenedor por iteración. Arreglado congelando el reloj (`$this->freezeTime()`): 8 de 8.
+
+Queda una copia de la derivación de clave en `tests/Feature/UnserializeTest.php:8`, donde el `beforeEach` reconstruye `'unserialize:'.hash('sha256', '127.0.0.1')` a mano. Exponerla desde `ConversionRateLimiter` requeriría un método que acepte una IP en vez de un `Request`; se dejó como decisión tuya.
+
+### Fallo preexistente, ajeno a este trabajo
+
+`ContentPagesTest > it highlights the developer guide code blocks with Shiki` falla con y sin estos cambios. Afirma `assertSee('resources/js/highlight.js')`, que es la ruta de origen que `@vite` emite **solo** con el dev server activo; en modo build emite la ruta con hash. Pasa con `npm run dev` o `composer run dev` corriendo.
+
 ## Plan
 
 El plan de ejecución, con criterios de aceptación y verificación por tarea, está en [`tasks/plan.md`](tasks/plan.md). La checklist viva está en [`tasks/todo.md`](tasks/todo.md).

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\ConversionInterface;
+use App\Enums\ConversionOutcome;
 use App\Models\ConversionMetric;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -17,7 +18,7 @@ class ConversionMetricFactory extends Factory
         return [
             'date' => $occurredAt->toDateString(),
             'interface' => ConversionInterface::Browser,
-            'outcome' => ConversionMetric::OUTCOME_SUCCESS,
+            'outcome' => ConversionOutcome::Success->value,
             'count' => 1,
             'last_occurred_at' => $occurredAt,
         ];
@@ -26,12 +27,12 @@ class ConversionMetricFactory extends Factory
     /**
      * Place the aggregate on one UTC day, for one interface and one outcome.
      */
-    public function on(string $date, ConversionInterface $interface, string $outcome): static
+    public function on(string $date, ConversionInterface $interface, ConversionOutcome $outcome): static
     {
         return $this->state([
             'date' => $date,
             'interface' => $interface,
-            'outcome' => $outcome,
+            'outcome' => $outcome->value,
             'last_occurred_at' => $date.' 12:00:00',
         ]);
     }

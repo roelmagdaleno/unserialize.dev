@@ -57,18 +57,7 @@ readonly class SyntaxDiagnostic
      */
     public function corroboratedBy(?int $engineOffset, DiagnosticConfidence $confidence): self
     {
-        return new self(
-            $this->code,
-            $this->offset,
-            $this->length,
-            $this->message,
-            $this->suggestion,
-            $this->contextStart,
-            $this->expectedTerminatorOffset,
-            $this->fix,
-            $engineOffset,
-            $confidence,
-        );
+        return $this->with(engineOffset: $engineOffset, confidence: $confidence);
     }
 
     /**
@@ -85,18 +74,7 @@ readonly class SyntaxDiagnostic
             return $this;
         }
 
-        return new self(
-            $this->code,
-            $this->offset,
-            $this->length,
-            $this->message,
-            $this->suggestion,
-            $contextStart,
-            $this->expectedTerminatorOffset,
-            $this->fix,
-            $this->engineOffset,
-            $this->confidence,
-        );
+        return $this->with(contextStart: $contextStart);
     }
 
     /**
@@ -115,17 +93,10 @@ readonly class SyntaxDiagnostic
             return $this;
         }
 
-        return new self(
-            $this->code,
-            $offset,
-            $span,
-            $this->message,
-            $this->suggestion,
-            min($this->contextStart, $length),
-            $this->expectedTerminatorOffset,
-            $this->fix,
-            $this->engineOffset,
-            $this->confidence,
+        return $this->with(
+            offset: $offset,
+            length: $span,
+            contextStart: min($this->contextStart, $length),
         );
     }
 
@@ -134,17 +105,39 @@ readonly class SyntaxDiagnostic
      */
     public function withoutSuggestion(): self
     {
+        return $this->with(suggested: false);
+    }
+
+    /**
+     * Copy this diagnostic with selected fields replaced.
+     *
+     * Every wither above routes through here, so the constructor's argument
+     * list is written out once rather than restated in each of them.
+     *
+     * `engineOffset` defaults to `false` rather than null because null is a
+     * value {@see self::corroboratedBy()} legitimately sets, so it cannot double
+     * as "leave this alone". The suggestion and the fix that backs it travel
+     * together: one is never dropped without the other.
+     */
+    private function with(
+        ?int $offset = null,
+        ?int $length = null,
+        ?int $contextStart = null,
+        int|false|null $engineOffset = false,
+        ?DiagnosticConfidence $confidence = null,
+        bool $suggested = true,
+    ): self {
         return new self(
             $this->code,
-            $this->offset,
-            $this->length,
+            $offset ?? $this->offset,
+            $length ?? $this->length,
             $this->message,
-            null,
-            $this->contextStart,
+            $suggested ? $this->suggestion : null,
+            $contextStart ?? $this->contextStart,
             $this->expectedTerminatorOffset,
-            null,
-            $this->engineOffset,
-            $this->confidence,
+            $suggested ? $this->fix : null,
+            $engineOffset === false ? $this->engineOffset : $engineOffset,
+            $confidence ?? $this->confidence,
         );
     }
 
