@@ -68,4 +68,4 @@ Treat serialized data as untrusted input. This converter calls PHP with `allowed
 
 Conversions are processed in memory and the submitted value and JSON result are not stored or logged. Technical usage metadata such as your User-Agent and the request URL is kept locally for a limited period. Even so, remove passwords, tokens, email addresses, private URLs, and other sensitive information before submitting data. Read the [privacy and retention details]({{ route('privacy') }}) for the complete policy.
 
-Unserialize is open source. Read the code, report an issue, or send a patch at [github.com/roelmagdaleno/unserialize](https://github.com/roelmagdaleno/unserialize).
+Unserialize is open source. Read the code, report an issue, or send a patch at [github.com/roelmagdaleno/unserialize](https://github.com/roelmagdaleno/unserialize.dev).

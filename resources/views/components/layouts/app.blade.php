@@ -52,7 +52,7 @@
                 Built with ❤️ by <a href="https://github.com/roelmagdaleno" class="text-blue-900 dark:text-blue-300">Roel</a>.
                 <a href="{{ route('privacy') }}" class="text-blue-900 dark:text-blue-300">Privacy</a>.
                 <a href="{{ route('developers') }}" class="text-blue-900 dark:text-blue-300">API and MCP documentation</a>.
-                <a href="https://github.com/roelmagdaleno/unserialize" class="text-blue-900 dark:text-blue-300">Source on GitHub</a>.
+                <a href="https://github.com/roelmagdaleno/unserialize.dev" class="text-blue-900 dark:text-blue-300">Source on GitHub</a>.
             </p>
         </footer>
     </main>
