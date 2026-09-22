@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Format staged PHP files with Laravel Pint and re-stage them.
+
+files=$(git diff --cached --name-only --diff-filter=ACMR -z -- '*.php' | tr '\0' '\n')
+
+if [ -z "$files" ]; then
+    exit 0
+fi
+
+if [ ! -x vendor/bin/pint ]; then
+    echo "pre-commit: vendor/bin/pint not found, run composer install." >&2
+    exit 1
+fi
+
+git diff --cached --name-only --diff-filter=ACMR -z -- '*.php' | xargs -0 vendor/bin/pint || exit 1
+git diff --cached --name-only --diff-filter=ACMR -z -- '*.php' | xargs -0 git add
