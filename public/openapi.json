@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Unserialize API",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "Stateless conversion of supported PHP serialized values to JSON. Request and response bodies are not retained.",
     "license": {
       "name": "MIT",

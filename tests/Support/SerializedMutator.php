@@ -35,6 +35,57 @@ final class SerializedMutator
         return array_filter($mutations, static fn (?string $mutation): bool => $mutation !== null && $mutation !== '');
     }
 
+    /**
+     * Applies several independent mutations in sequence.
+     *
+     * One mutation is the easy case. Real corruption arrives in batches, and a
+     * repairer that clears a single fault can still walk a multi-fault payload
+     * into a wrong value.
+     */
+    public function chain(string $serialized, int $rounds): ?string
+    {
+        $mutated = $serialized;
+
+        for ($round = 0; $round < $rounds; $round++) {
+            $mutations = array_values($this->mutations($mutated));
+
+            if ($mutations === []) {
+                return $round === 0 ? null : $mutated;
+            }
+
+            $mutated = $mutations[$this->randomizer->getInt(0, count($mutations) - 1)];
+        }
+
+        return $mutated === $serialized ? null : $mutated;
+    }
+
+    /**
+     * Breaks several declared string lengths at once.
+     *
+     * This is the canonical corruption: a search-and-replace pass rewrites the
+     * bytes of many strings and updates none of their declared lengths. Edits
+     * are applied right to left so earlier offsets stay valid.
+     */
+    public function searchReplaceCorruption(string $serialized, int $count): ?string
+    {
+        if (preg_match_all('/s:(\d+):"/', $serialized, $matches, PREG_OFFSET_CAPTURE) === 0) {
+            return null;
+        }
+
+        $targets = array_slice($this->randomizer->shuffleArray($matches[1]), 0, $count);
+
+        usort($targets, static fn (array $a, array $b): int => $b[1] <=> $a[1]);
+
+        $mutated = $serialized;
+
+        foreach ($targets as [$digits, $offset]) {
+            $replacement = max(0, (int) $digits + ($this->randomizer->getInt(0, 1) === 0 ? 1 : -1));
+            $mutated = substr_replace($mutated, (string) $replacement, $offset, strlen($digits));
+        }
+
+        return $mutated === $serialized ? null : $mutated;
+    }
+
     private function truncate(string $serialized): ?string
     {
         $length = strlen($serialized);

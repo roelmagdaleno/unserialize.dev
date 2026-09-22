@@ -203,7 +203,7 @@ it('publishes the OpenAPI contract from a stable URL', function () {
 it('publishes every diagnostic code in the OpenAPI contract', function () {
     $document = $this->getJson('/openapi.json')->json();
 
-    expect($document['info']['version'])->toBe('1.1.0')
+    expect($document['info']['version'])->toBe('1.1.1')
         ->and($document['components']['schemas']['Diagnostic']['additionalProperties'])->toBeFalse()
         ->and($document['components']['schemas']['Diagnostic']['required'])
         ->toEqualCanonicalizing(['code', 'message', 'offset', 'length'])

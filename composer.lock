@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7fa441b0489e043aa34a32f34cf4c799",
+    "content-hash": "a60b0c6bb513f7a1dbd97be0708137cb",
     "packages": [
         {
             "name": "brick/math",
@@ -3650,6 +3650,64 @@
                 "source": "https://github.com/ramsey/uuid/tree/4.9.4"
             },
             "time": "2026-09-16T11:39:30+00:00"
+        },
+        {
+            "name": "roelmagdaleno/serialized",
+            "version": "1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/roelmagdaleno/serialized.git",
+                "reference": "3b575ebd5987c5336f450bb07e9640235de120b7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/roelmagdaleno/serialized/zipball/3b575ebd5987c5336f450bb07e9640235de120b7",
+                "reference": "3b575ebd5987c5336f450bb07e9640235de120b7",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.32",
+                "pestphp/pest": "^5.2",
+                "phpstan/phpstan": "^2.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Serialized\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Roel Magdaleno",
+                    "email": "roelmagdaleno@gmail.com"
+                }
+            ],
+            "description": "Convert PHP serialized data into pretty-printed JSON, safely.",
+            "keywords": [
+                "json",
+                "serialized",
+                "unserialize"
+            ],
+            "support": {
+                "issues": "https://github.com/roelmagdaleno/serialized/issues",
+                "source": "https://github.com/roelmagdaleno/serialized/tree/1.1.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/roelmagdaleno",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-09-21T23:54:07+00:00"
         },
         {
             "name": "symfony/clock",
