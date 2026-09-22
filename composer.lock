@@ -3652,16 +3652,16 @@
         },
         {
             "name": "roelmagdaleno/serialized",
-            "version": "1.1.0",
+            "version": "1.1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/roelmagdaleno/serialized.git",
-                "reference": "3b575ebd5987c5336f450bb07e9640235de120b7"
+                "reference": "2a04a0022633afbb01af42ee5e474a33563cd939"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/roelmagdaleno/serialized/zipball/3b575ebd5987c5336f450bb07e9640235de120b7",
-                "reference": "3b575ebd5987c5336f450bb07e9640235de120b7",
+                "url": "https://api.github.com/repos/roelmagdaleno/serialized/zipball/2a04a0022633afbb01af42ee5e474a33563cd939",
+                "reference": "2a04a0022633afbb01af42ee5e474a33563cd939",
                 "shasum": ""
             },
             "require": {
@@ -3698,7 +3698,7 @@
             ],
             "support": {
                 "issues": "https://github.com/roelmagdaleno/serialized/issues",
-                "source": "https://github.com/roelmagdaleno/serialized/tree/1.1.0"
+                "source": "https://github.com/roelmagdaleno/serialized/tree/1.1.1"
             },
             "funding": [
                 {
@@ -3706,7 +3706,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-21T23:54:07+00:00"
+            "time": "2026-09-22T19:10:12+00:00"
         },
         {
             "name": "symfony/clock",
