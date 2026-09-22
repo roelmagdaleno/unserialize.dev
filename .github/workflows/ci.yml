@@ -24,8 +24,7 @@ jobs:
           MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
           MYSQL_DATABASE: unserialize_testing
         ports:
-          # phpunit.xml pins DB_PORT to 3308, so the service is published there.
-          - 3308:3306
+          - 3306:3306
         options: >-
           --health-cmd="mysqladmin ping --silent"
           --health-interval=10s
