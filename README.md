@@ -1,6 +1,16 @@
 # Unserialize
 
-[Unserialize](https://unserialize.dev) converts PHP serialized values into readable JSON. It provides a Livewire browser interface, a versioned JSON API, and a read-only MCP tool backed by the same conversion service.
+[Unserialize](https://unserialize.dev) turns PHP serialized data into readable JSON.
+
+PHP apps — WordPress especially — often store data in a packed format that looks like `a:2:{s:4:"name";s:5:"Codex";}`. It is compact for machines and painful for people. Paste that string into Unserialize and get clean, formatted JSON back.
+
+## Three ways to use it
+
+- **Web** — Open [unserialize.dev](https://unserialize.dev), paste a value, and read the result instantly. No account, no install.
+- **API** — Send values from your own script, app, or terminal and get JSON back. Free and open to anyone, with a limit of 10 requests per minute.
+- **MCP** — Connect an AI assistant, such as Claude, to Unserialize so it can decode values for you while you work.
+
+All three share the same converter, so the results are identical. Nothing you submit is saved.
 
 ## Behavior and privacy
 
@@ -24,7 +34,7 @@ npm install
 npm run build
 ```
 
-Set `APP_URL` to the local URL used by your environment. Laravel Herd users can visit `https://unserialize.test`; no development server command is needed.
+Set `APP_URL` to the local URL used by your environment.
 
 ## HTTP API
 
