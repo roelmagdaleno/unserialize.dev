@@ -68,6 +68,10 @@ Focused behavior is covered by the [service tests](tests/Unit/UnserializeTest.ph
 
 Every conversion emits a `conversion.completed` event with only `interface`, `outcome`, `duration_ms`, and `input_size_bucket`. Nightwatch request-body capture is forcibly disabled. Build dashboards grouped by interface and outcome, graph p95 duration, and monitor the `over-256KiB` and `rate_limited` series for abuse. Alert on sustained availability failures, elevated non-user error rates, or material p95 latency regressions against the established production baseline. Nightwatch supplies the request trace identifier without adding submitted data to the event.
 
+## Contributing
+
+Issues and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, conventions, and the checks that run in CI.
+
 ## Security and license
 
 Report vulnerabilities privately to [roelmagdaleno@gmail.com](mailto:roelmagdaleno@gmail.com).
