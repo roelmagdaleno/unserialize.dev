@@ -60,11 +60,6 @@ jobs:
       - name: Check code style
         run: vendor/bin/pint --test
 
-      - name: Run the test suite
-        env:
-          NIGHTWATCH_ENABLED: 'false'
-        run: php artisan test --compact
-
       - name: Set up Node
         uses: actions/setup-node@v5
         with:
@@ -76,6 +71,11 @@ jobs:
 
       - name: Build assets
         run: npm run build
+
+      - name: Run the test suite
+        env:
+          NIGHTWATCH_ENABLED: 'false'
+        run: php artisan test --compact
 
       - name: Validate composer.json
         run: composer validate --strict --no-check-publish
