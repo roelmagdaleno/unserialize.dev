@@ -12,5 +12,6 @@ enum UsageEventType: string
 {
     case ConversionCompleted = 'conversion_completed';
     case McpSessionInitialized = 'mcp_session_initialized';
+    case McpToolsListed = 'mcp_tools_listed';
     case ResultCopied = 'result_copied';
 }

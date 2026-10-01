@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Methods\RecordingListTools;
 use App\Mcp\ServerCard;
 use App\Mcp\Tools\ConvertSerializedDataTool;
 use Laravel\Mcp\Server;
@@ -72,4 +73,12 @@ class UnserializeServer extends Server
      * @var list<class-string<Prompt>>
      */
     protected array $prompts = self::PROMPTS;
+
+    /**
+     * Replace the package's `tools/list` handler with one that records usage.
+     */
+    protected function boot(): void
+    {
+        $this->addMethod('tools/list', RecordingListTools::class);
+    }
 }

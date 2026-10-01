@@ -325,6 +325,24 @@ it('rejects an implausible mcp protocol version instead of storing it', function
     'absent' => [null],
 ]);
 
+it('records a tool listing when an mcp client lists the tools', function () {
+    $this->withHeader('User-Agent', 'claude-code/2.4.1')
+        ->postJson(route('mcp.unserialize'), ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list'], [
+            'Accept' => 'application/json, text/event-stream',
+        ])
+        ->assertOk()
+        ->assertJsonPath('result.tools.0.name', ConvertSerializedDataTool::NAME);
+
+    $event = UsageEvent::query()->sole();
+
+    expect($event->event)->toBe(UsageEventType::McpToolsListed)
+        ->and($event->interface)->toBe(ConversionInterface::Mcp)
+        ->and($event->mcp_transport)->toBe('http')
+        ->and($event->mcp_tool)->toBeNull()
+        ->and($event->user_agent)->toBe('claude-code/2.4.1');
+    $this->assertDatabaseCount('conversion_metrics', 0);
+});
+
 it('records 429 from the mcp rate limiter', function () {
     foreach (range(1, 10) as $ignored) {
         $this->postJson(route('mcp.unserialize'), ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'ping'], [
