@@ -32,7 +32,13 @@ class Serialized extends Component
      * The home page meta description, shared with the route metadata and the
      * structured data so both describe the converter the same way.
      */
-    public const string META_DESCRIPTION = 'Convert PHP serialized data to readable JSON without storing your input. Includes tested mappings, limits, and object-safety guidance.';
+    public const string META_DESCRIPTION = 'Unserialize PHP data online and view it as readable JSON. Private by default: nothing is stored, and PHP objects are rejected for safety.';
+
+    /**
+     * The home page Open Graph and Twitter description, shorter than the meta
+     * description because social cards already show the title and image.
+     */
+    public const string SOCIAL_DESCRIPTION = 'Turn PHP serialized data into readable JSON. Paste, convert, done. Nothing you paste is stored.';
 
     /**
      * The status a Livewire update answers with.

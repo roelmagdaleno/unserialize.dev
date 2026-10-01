@@ -2,7 +2,8 @@
 
 use App\Models\Output;
 
-it('renders unique self-canonical metadata on every indexable page', function (string $routeName, string $path, string $title, string $description) {
+it('renders unique self-canonical metadata on every indexable page', function (string $routeName, string $path, string $title, string $description, ?string $socialDescription = null) {
+    $socialDescription ??= $description;
     $url = $path === '/' ? url('/').'/' : url($path);
 
     $this->get(route($routeName))
@@ -12,11 +13,13 @@ it('renders unique self-canonical metadata on every indexable page', function (s
         ->assertSee('<meta name="robots" content="all">', false)
         ->assertSee('<meta property="og:url" content="'.$url.'">', false)
         ->assertSee('<meta property="og:title" content="'.e($title).'">', false)
-        ->assertSee('<meta property="og:description" content="'.e($description).'">', false)
+        ->assertSee('<meta property="og:description" content="'.e($socialDescription).'">', false)
+        ->assertSee('<meta name="twitter:description" content="'.e($socialDescription).'">', false)
         ->assertSee('<meta name="twitter:card" content="summary_large_image">', false)
+        ->assertSee('<meta name="twitter:site" content="@roelmagdaleno">', false)
         ->assertSee('<meta property="og:image" content="'.asset('images/social.png').'">', false);
 })->with([
-    'home' => ['home', '/', 'PHP Unserialize to JSON Converter | Unserialize', 'Convert PHP serialized data to readable JSON without storing your input. Includes tested mappings, limits, and object-safety guidance.'],
+    'home' => ['home', '/', 'PHP Unserialize to JSON Converter | Unserialize', 'Unserialize PHP data online and view it as readable JSON. Private by default: nothing is stored, and PHP objects are rejected for safety.', 'Turn PHP serialized data into readable JSON. Paste, convert, done. Nothing you paste is stored.'],
     'privacy' => ['privacy', '/privacy', 'Privacy and Retention | Unserialize', 'Learn how Unserialize processes PHP serialized data and protects submitted values.'],
     'developer guide' => ['developers', '/developers', 'API and MCP Developer Guide | Unserialize', 'Integrate the stateless PHP serialized-data converter through its versioned JSON API or read-only MCP tool.'],
 ]);

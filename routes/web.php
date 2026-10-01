@@ -25,7 +25,8 @@ Route::get('/', Serialized::class)
         title: 'PHP Unserialize to JSON Converter',
         description: Serialized::META_DESCRIPTION,
         canonical: ['value' => $pageUrl('/'), 'forceHttps' => false],
-        og: ['url' => $pageUrl('/')],
+        og: ['url' => $pageUrl('/'), 'description' => Serialized::SOCIAL_DESCRIPTION],
+        twitter: ['description' => Serialized::SOCIAL_DESCRIPTION],
     );
 
 Route::view('/privacy', 'privacy')
