@@ -89,18 +89,47 @@ class Serialized extends Component
     public ?array $diagnostic = null;
 
     /**
+     * The GitHub profile that identifies the converter's author.
+     */
+    private const string AUTHOR_GITHUB_URL = 'https://github.com/roelmagdaleno';
+
+    /**
      * Publish the converter's structured data alongside the head metadata the
      * home route already declares.
+     *
+     * - The author is published once under an `@id`; the application and site
+     *   reference that node instead of repeating it.
+     * - `WebSite` belongs on the home page only, where search engines read the
+     *   site name from.
      */
     public function mount(): void
     {
+        $homeUrl = url('/').'/';
+        $author = ['@id' => $homeUrl.'#author'];
+
+        Head::schema(
+            Schema::person()
+                ->set('@id', $author['@id'])
+                ->name('Roel Magdaleno Ramón')
+                ->url(self::AUTHOR_GITHUB_URL)
+                ->sameAs([self::AUTHOR_GITHUB_URL])
+        );
+
+        Head::schema(
+            Schema::webSite()
+                ->name('Unserialize')
+                ->url($homeUrl)
+                ->publisher($author)
+        );
+
         Head::schema(
             Schema::webApplication()
                 ->name('Unserialize')
-                ->url(url('/').'/')
+                ->url($homeUrl)
                 ->description(self::META_DESCRIPTION)
                 ->applicationCategory('DeveloperApplication')
                 ->operatingSystem('Any operating system with a modern web browser')
+                ->creator($author)
                 ->offers(
                     Schema::offer()
                         ->price(0)

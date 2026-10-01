@@ -29,7 +29,14 @@ it('publishes accurate application structured data on the home page', function (
         ->assertSee('"@type":"WebApplication"', false)
         ->assertSee('"applicationCategory":"DeveloperApplication"', false)
         ->assertSee('"url":"'.url('/').'/"', false)
+        ->assertSee('"creator":{"@id":"'.url('/').'/#author"}', false)
         ->assertSee('"offers":{"@type":"Offer","price":0,"priceCurrency":"USD"}', false);
+});
+
+it('publishes the site name and its author on the home page', function () {
+    $this->get(route('home'))
+        ->assertSee('{"@context":"https://schema.org","@type":"WebSite","name":"Unserialize","url":"'.url('/').'/","publisher":{"@id":"'.url('/').'/#author"}}', false)
+        ->assertSee('{"@context":"https://schema.org","@type":"Person","@id":"'.url('/').'/#author","name":"Roel Magdaleno Ramón","url":"https://github.com/roelmagdaleno","sameAs":["https://github.com/roelmagdaleno"]}', false);
 });
 
 it('keeps legacy output metadata private and non-canonical', function () {
@@ -40,5 +47,7 @@ it('keeps legacy output metadata private and non-canonical', function () {
         ->assertSee('<meta name="robots" content="noindex, nofollow, noarchive">', false)
         ->assertDontSee('<link rel="canonical"', false)
         ->assertDontSee('<meta property="og:url"', false)
-        ->assertDontSee('"@type":"WebApplication"', false);
+        ->assertDontSee('"@type":"WebApplication"', false)
+        ->assertDontSee('"@type":"WebSite"', false)
+        ->assertDontSee('"@type":"Person"', false);
 });
