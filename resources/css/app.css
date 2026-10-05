@@ -18,3 +18,13 @@
         font-family: var(--font-mono);
     }
 }
+
+/*
+ * FAQ answers are rendered from Markdown, so their links cannot carry utility
+ * classes. Match the links the rest of the home article uses.
+ */
+@layer components {
+    .faq-answer a {
+        @apply text-blue-900 underline dark:text-blue-300;
+    }
+}

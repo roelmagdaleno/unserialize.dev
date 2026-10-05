@@ -81,7 +81,7 @@
     <div class="space-y-12">
         <section aria-labelledby="how-to-convert">
             <h2 id="how-to-convert" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">How to convert PHP serialized data</h2>
-            <p class="mt-3 leading-7">Paste a value produced by PHP's <code>serialize()</code> function into the converter above, select <strong>Unserialize</strong>, then review or copy the readable JSON result.</p>
+            <p class="mt-3 leading-7">Paste a value produced by PHP's <code>serialize()</code> function into the converter above, click on <strong>Unserialize</strong>, then review or copy the readable JSON result.</p>
             <ol class="mt-4 list-decimal space-y-2 pl-6 leading-7">
                 <li>Copy the complete serialized value, including its type markers, lengths, and delimiters.</li>
                 <li>Paste it into the editor and click on <strong>Unserialize</strong>.</li>
@@ -141,14 +141,30 @@
 
         <section id="wordpress" class="scroll-mt-6" aria-labelledby="wordpress-data">
             <h2 id="wordpress-data" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Working with WordPress serialized data</h2>
-            <p class="mt-3 leading-7">WordPress stores some arrays and structured settings as serialized PHP in options and metadata. Unserialize makes those values easier to inspect as JSON, whether they come from WP-CLI, a database export, or a read-only database client.</p>
-            <p class="mt-3 leading-7"><strong>Back up the database before making changes.</strong> Redact secrets and personal data before pasting a value into any web tool. If you need to update it, use WordPress APIs or WP-CLI so PHP recalculates string lengths; never edit those lengths manually.</p>
+            <p class="mt-3 leading-7">WordPress stores arrays in options and post meta as serialized PHP. Paste a value from WP-CLI or a read-only database client above to inspect it as JSON. Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('guides.wordpress-serialized-data') }}">WordPress serialized data guide</a> to read it as a PHP array and edit it safely, or <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('guides.broken-serialized-string') }}">fix a broken serialized string</a>.</p>
+            <p class="mt-3 leading-7"><strong>Back up the database before making changes.</strong> Redact secrets and personal data before pasting a value into any web tool.</p>
         </section>
 
         <section id="security" class="scroll-mt-6" aria-labelledby="security-and-privacy">
             <h2 id="security-and-privacy" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Security and privacy</h2>
             <p class="mt-3 leading-7">Treat serialized data as untrusted input. This converter calls PHP with <code>allowed_classes</code> set to <code>false</code>, rejects decoded objects, limits input to 262,144 bytes, and caps decoding depth.</p>
             <p class="mt-3 leading-7">Conversions are processed in memory and the submitted value and JSON result are not stored or logged. Technical usage metadata such as your User-Agent and the request URL is kept locally for a limited period. Even so, remove passwords, tokens, email addresses, private URLs, and other sensitive information before submitting data. Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('privacy') }}">privacy and retention details</a> for the complete policy.</p>
+        </section>
+
+        <section id="faq" class="scroll-mt-6" aria-labelledby="faq-heading">
+            <h2 id="faq-heading" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Frequently asked questions</h2>
+            <div class="mt-4 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+                @foreach ($questions as $question)
+                    <details class="group py-4" wire:key="faq-{{ $loop->index }}">
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 rounded font-semibold text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 dark:text-white dark:focus-visible:outline-blue-300 [&::-webkit-details-marker]:hidden">
+                            {{ $question['question'] }}
+                            <svg class="h-5 w-5 shrink-0 text-zinc-500 transition-transform group-open:rotate-180 dark:text-zinc-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
+                        </summary>
+                        {{-- Trusted, maintainer-authored HTML rendered from FrequentlyAskedQuestions; no request data reaches it. --}}
+                        <div class="faq-answer mt-3 space-y-3 leading-7">{!! $question['html'] !!}</div>
+                    </details>
+                @endforeach
+            </div>
         </section>
     </div>
 </article>

@@ -1,4 +1,4 @@
-# Unserialize — PHP Unserialize to JSON Converter
+# Unserialize Online – PHP Unserialize to JSON Converter
 
 > Convert PHP serialized data into clean, readable JSON. Conversions are processed in memory: the submitted value and the JSON result are not stored or logged.
 
@@ -58,9 +58,9 @@ Sequential integer keys become JSON arrays; associative keys become JSON objects
 
 ## Working with WordPress serialized data
 
-WordPress stores some arrays and structured settings as serialized PHP in options and metadata. Unserialize makes those values easier to inspect as JSON, whether they come from WP-CLI, a database export, or a read-only database client.
+WordPress stores arrays in options and post meta as serialized PHP. Paste a value from WP-CLI or a read-only database client into the converter to inspect it as JSON. Read the [WordPress serialized data guide]({{ route('guides.wordpress-serialized-data') }}) to read it as a PHP array and edit it safely, or [fix a broken serialized string]({{ route('guides.broken-serialized-string') }}).
 
-**Back up the database before making changes.** Redact secrets and personal data before pasting a value into any web tool. If you need to update it, use WordPress APIs or WP-CLI so PHP recalculates string lengths; never edit those lengths manually.
+**Back up the database before making changes.** Redact secrets and personal data before pasting a value into any web tool.
 
 ## Security and privacy
 
@@ -68,4 +68,12 @@ Treat serialized data as untrusted input. This converter calls PHP with `allowed
 
 Conversions are processed in memory and the submitted value and JSON result are not stored or logged. Technical usage metadata such as your User-Agent and the request URL is kept locally for a limited period. Even so, remove passwords, tokens, email addresses, private URLs, and other sensitive information before submitting data. Read the [privacy and retention details]({{ route('privacy') }}) for the complete policy.
 
+## Frequently asked questions
+
+@foreach (app(\App\Data\FrequentlyAskedQuestions::class)->all() as $question)
+### {!! $question['question'] !!}
+
+{!! $question['markdown'] !!}
+
+@endforeach
 Unserialize is open source. Read the code, report an issue, or send a patch at [github.com/roelmagdaleno/unserialize](https://github.com/roelmagdaleno/unserialize.dev).

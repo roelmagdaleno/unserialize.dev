@@ -1,5 +1,6 @@
 <?php
 
+use App\Data\FrequentlyAskedQuestions;
 use App\Models\Output;
 
 it('renders unique self-canonical metadata on every indexable page', function (string $routeName, string $path, string $title, string $description, ?string $socialDescription = null) {
@@ -19,7 +20,9 @@ it('renders unique self-canonical metadata on every indexable page', function (s
         ->assertSee('<meta name="twitter:site" content="@roelmagdaleno">', false)
         ->assertSee('<meta property="og:image" content="'.asset('images/social.png').'">', false);
 })->with([
-    'home' => ['home', '/', 'PHP Unserialize to JSON Converter | Unserialize', 'Unserialize PHP data online and view it as readable JSON. Private by default: nothing is stored, and PHP objects are rejected for safety.', 'Turn PHP serialized data into readable JSON. Paste, convert, done. Nothing you paste is stored.'],
+    'home' => ['home', '/', 'Unserialize Online – PHP Unserialize to JSON Converter', 'Unserialize PHP data online and view it as readable JSON. Private by default: nothing is stored, and PHP objects are rejected for safety.', 'Turn PHP serialized data into readable JSON. Paste, convert, done. Nothing you paste is stored.'],
+    'wordpress guide' => ['guides.wordpress-serialized-data', '/guides/wordpress-serialized-data', 'WordPress Serialized Data: Read, Convert and Edit Safely', 'Find where WordPress stores serialized PHP, read it as a PHP array or JSON, and edit options and post meta without breaking string lengths.'],
+    'broken string guide' => ['guides.broken-serialized-string', '/guides/fix-broken-serialized-string', 'Fix a Broken PHP Serialized String (Error at Offset)', 'Repair a PHP serialized string that fails with an error at offset: wrong lengths after a search and replace, multibyte characters, and truncated values.'],
     'privacy' => ['privacy', '/privacy', 'Privacy and Retention | Unserialize', 'Learn how Unserialize processes PHP serialized data and protects submitted values.'],
     'developer guide' => ['developers', '/developers', 'API and MCP Developer Guide | Unserialize', 'Integrate the stateless PHP serialized-data converter through its versioned JSON API or read-only MCP tool.'],
 ]);
@@ -50,4 +53,27 @@ it('keeps legacy output metadata private and non-canonical', function () {
         ->assertDontSee('"@type":"WebApplication"', false)
         ->assertDontSee('"@type":"WebSite"', false)
         ->assertDontSee('"@type":"Person"', false);
+});
+
+it('publishes every visible question as faq structured data', function () {
+    $content = $this->get(route('home'))->getContent();
+
+    preg_match_all('#<script type="application/ld\+json">(.*?)</script>#s', $content, $matches);
+
+    $faq = collect($matches[1])
+        ->map(fn (string $json): array => json_decode($json, true, flags: JSON_THROW_ON_ERROR))
+        ->firstWhere('@type', 'FAQPage');
+
+    $questions = (new FrequentlyAskedQuestions)->all();
+
+    expect($faq)->not->toBeNull()
+        ->and($faq['mainEntity'])->toHaveCount(count($questions))
+        ->and(array_column($faq['mainEntity'], 'name'))->toBe(array_column($questions, 'question'));
+
+    $firstAnswer = $faq['mainEntity'][0]['acceptedAnswer']['text'];
+
+    expect($firstAnswer)
+        ->toStartWith('<p>')
+        ->toContain('serialize()')
+        ->not->toContain('<code>');
 });

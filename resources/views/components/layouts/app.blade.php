@@ -13,7 +13,7 @@
 
         @if(Route::is('home', 'outputs'))
             @vite(['resources/css/code.css', 'resources/js/clipboard.js', 'resources/js/highlight.js'])
-        @elseif(Route::is('developers'))
+        @elseif(Route::is('developers', 'guides.*'))
             @vite(['resources/css/code.css', 'resources/js/highlight.js'])
         @endif
 
@@ -27,7 +27,7 @@
                     <a href="{{ route('home') }}">Unserialize</a>
                 </h1>
                 <p class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-                    Convert PHP serialized data into clean, readable JSON.
+                    Unserialize PHP data online and convert it to clean, readable JSON.
                 </p>
             </div>
 
@@ -50,6 +50,8 @@
         <footer>
             <p class="mt-8 text-sm text-gray-700 dark:text-gray-300">
                 Built with ❤️ by <a href="https://github.com/roelmagdaleno" class="text-blue-900 dark:text-blue-300">Roel</a>.
+                <a href="{{ route('guides.wordpress-serialized-data') }}" class="text-blue-900 dark:text-blue-300">WordPress serialized data</a>.
+                <a href="{{ route('guides.broken-serialized-string') }}" class="text-blue-900 dark:text-blue-300">Fix a broken serialized string</a>.
                 <a href="{{ route('privacy') }}" class="text-blue-900 dark:text-blue-300">Privacy</a>.
                 <a href="{{ route('developers') }}" class="text-blue-900 dark:text-blue-300">API and MCP documentation</a>.
                 <a href="https://github.com/roelmagdaleno/unserialize.dev" class="text-blue-900 dark:text-blue-300">Source on GitHub</a>.

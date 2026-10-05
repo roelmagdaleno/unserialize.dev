@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Data\FrequentlyAskedQuestions;
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
@@ -101,8 +102,10 @@ class Serialized extends Component
      *   reference that node instead of repeating it.
      * - `WebSite` belongs on the home page only, where search engines read the
      *   site name from.
+     * - The FAQ structured data comes from the same source as the visible
+     *   questions, so the two cannot drift.
      */
-    public function mount(): void
+    public function mount(FrequentlyAskedQuestions $questions): void
     {
         $homeUrl = url('/').'/';
         $author = ['@id' => $homeUrl.'#author'];
@@ -136,6 +139,8 @@ class Serialized extends Component
                         ->currency('USD')
                 )
         );
+
+        Head::schema(Schema::faq()->questions($questions->forStructuredData()));
     }
 
     /**
@@ -250,6 +255,8 @@ class Serialized extends Component
      */
     public function render(): View
     {
-        return view('livewire.serialized');
+        return view('livewire.serialized', [
+            'questions' => app(FrequentlyAskedQuestions::class)->all(),
+        ]);
     }
 }

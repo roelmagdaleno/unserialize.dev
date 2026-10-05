@@ -129,7 +129,10 @@ it('shows a window around the problem instead of the whole value', function () {
         ->assertSee('Change `s:4:` to `s:5:`.')
         ->assertSee('…');
 
-    expect(strlen($component->html()))->toBeLessThan(20_000);
+    preg_match('#<section[^>]*role="alert".*?</section>#s', $component->html(), $panel);
+
+    expect($panel)->not->toBeEmpty()
+        ->and(strlen($panel[0]))->toBeLessThan(20_000);
 });
 
 it('escapes unprintable bytes and never renders submitted markup as HTML', function () {
