@@ -39,7 +39,7 @@ it('publishes accurate application structured data on the home page', function (
 it('publishes the site name and its author on the home page', function () {
     $this->get(route('home'))
         ->assertSee('{"@context":"https://schema.org","@type":"WebSite","name":"Unserialize","url":"'.url('/').'/","publisher":{"@id":"'.url('/').'/#author"}}', false)
-        ->assertSee('{"@context":"https://schema.org","@type":"Person","@id":"'.url('/').'/#author","name":"Roel Magdaleno Ramón","url":"https://github.com/roelmagdaleno","sameAs":["https://github.com/roelmagdaleno"]}', false);
+        ->assertSee('{"@context":"https://schema.org","@type":"Person","@id":"'.url('/').'/#author","name":"Roel Magdaleno Ramón","url":"https://github.com/roelmagdaleno","sameAs":["https://github.com/roelmagdaleno","https://x.com/Roel7nxju0"]}', false);
 });
 
 it('keeps legacy output metadata private and non-canonical', function () {

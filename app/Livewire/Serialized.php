@@ -95,6 +95,11 @@ class Serialized extends Component
     private const string AUTHOR_GITHUB_URL = 'https://github.com/roelmagdaleno';
 
     /**
+     * The X profile that identifies the converter's author.
+     */
+    private const string AUTHOR_X_URL = 'https://x.com/Roel7nxju0';
+
+    /**
      * Publish the converter's structured data alongside the head metadata the
      * home route already declares.
      *
@@ -115,7 +120,7 @@ class Serialized extends Component
                 ->set('@id', $author['@id'])
                 ->name('Roel Magdaleno Ramón')
                 ->url(self::AUTHOR_GITHUB_URL)
-                ->sameAs([self::AUTHOR_GITHUB_URL])
+                ->sameAs([self::AUTHOR_GITHUB_URL, self::AUTHOR_X_URL])
         );
 
         Head::schema(
