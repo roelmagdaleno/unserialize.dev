@@ -27,9 +27,9 @@ it('keeps published examples aligned with the conversion service', function (str
     'reference example' => ['a:2:{i:0;s:1:"x";i:1;R:2;}', ['x', 'x']],
 ]);
 
-it('rejects the object example the home page publishes as rejected', function () {
-    expect(fn () => (new Serialized('O:8:"stdClass":1:{s:4:"name";s:3:"Ada";}'))->convert())
-        ->toThrow(ConversionException::class, 'Serialized objects are not supported.');
+it('converts the object example the home page publishes', function () {
+    expect((new Serialized('O:4:"User":1:{s:4:"name";s:3:"Ada";}'))->output())
+        ->toBe("{\n    \"name\": \"Ada\"\n}");
 });
 
 it('publishes developer instructions for both stateless interfaces', function () {

@@ -181,7 +181,7 @@
             "schema": { "$ref": "#/components/schemas/ErrorResponse" },
             "examples": {
               "invalid": { "value": { "error": { "code": "invalid_input", "message": "Invalid serialized data.", "diagnostic": { "code": "string_length_mismatch", "message": "The string starting at byte 6 declares 4 bytes but 5 bytes precede the closing quote.", "offset": 6, "length": 11, "suggestion": "Change `s:4:` to `s:5:`." } } } },
-              "object": { "value": { "error": { "code": "unsupported_object", "message": "Serialized objects are not supported." } } }
+              "object": { "value": { "error": { "code": "unsupported_object", "message": "Custom-serialized objects and enums are not supported." } } }
             }
           }
         }

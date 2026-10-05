@@ -79,7 +79,7 @@ class FrequentlyAskedQuestions
             ],
             [
                 'question' => 'Is it safe to unserialize untrusted data?',
-                'markdown' => 'Not with PHP\'s default settings. A serialized value can name a PHP class, and `unserialize()` will create that object and run its magic methods, which can lead to code execution. Always pass `[\'allowed_classes\' => false]`, or use JSON for data you exchange. This converter never creates objects: it rejects serialized objects, limits input to 262,144 bytes, and caps nesting depth.',
+                'markdown' => 'Not with PHP\'s default settings. A serialized value can name a PHP class, and `unserialize()` will create that object and run its magic methods, which can lead to code execution. Always pass `[\'allowed_classes\' => false]`, or use JSON for data you exchange. This converter never creates objects: it reads each serialized object as plain data without loading its class, rejects custom-serialized objects and enums, limits input to 262,144 bytes, and caps nesting depth.',
             ],
         ];
     }

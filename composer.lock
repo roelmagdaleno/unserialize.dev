@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "a60b0c6bb513f7a1dbd97be0708137cb",
+    "content-hash": "9b51a7134d8ef6fdb5b82f0e29d5709a",
     "packages": [
         {
             "name": "brick/math",
@@ -3652,16 +3652,16 @@
         },
         {
             "name": "roelmagdaleno/serialized",
-            "version": "1.1.1",
+            "version": "1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/roelmagdaleno/serialized.git",
-                "reference": "2a04a0022633afbb01af42ee5e474a33563cd939"
+                "reference": "dc5d9bfa145808d98fa0cb883a30b9528f5e40be"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/roelmagdaleno/serialized/zipball/2a04a0022633afbb01af42ee5e474a33563cd939",
-                "reference": "2a04a0022633afbb01af42ee5e474a33563cd939",
+                "url": "https://api.github.com/repos/roelmagdaleno/serialized/zipball/dc5d9bfa145808d98fa0cb883a30b9528f5e40be",
+                "reference": "dc5d9bfa145808d98fa0cb883a30b9528f5e40be",
                 "shasum": ""
             },
             "require": {
@@ -3698,7 +3698,7 @@
             ],
             "support": {
                 "issues": "https://github.com/roelmagdaleno/serialized/issues",
-                "source": "https://github.com/roelmagdaleno/serialized/tree/1.1.1"
+                "source": "https://github.com/roelmagdaleno/serialized/tree/1.2.0"
             },
             "funding": [
                 {
@@ -3706,7 +3706,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-09-22T19:10:12+00:00"
+            "time": "2026-10-05T19:16:24+00:00"
         },
         {
             "name": "symfony/clock",

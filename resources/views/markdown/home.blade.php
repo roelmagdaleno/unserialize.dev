@@ -43,7 +43,7 @@ PHP's [`serialize()` function](https://www.php.net/manual/en/function.serialize.
 | Indexed array | `a:2:{i:0;s:3:"red";i:1;s:4:"blue";}` | `["red", "blue"]` |
 | Associative array | `a:1:{s:4:"name";s:3:"Ada";}` | `{"name": "Ada"}` |
 | Reference | `a:2:{i:0;s:1:"x";i:1;R:2;}` | `["x", "x"]` |
-| Object | `O:8:"stdClass":1:{s:4:"name";s:3:"Ada";}` | Rejected |
+| Object | `O:4:"User":1:{s:4:"name";s:3:"Ada";}` | `{"name": "Ada"}` |
 
 ### Example: serialized PHP array to JSON
 
@@ -62,7 +62,7 @@ JSON:
 }
 ```
 
-Sequential integer keys become JSON arrays; associative keys become JSON objects. Null, booleans, integers, floats, strings, arrays, and nested combinations are supported. A reference (`R:`) becomes a copy of the value it points to. Serialized objects (`O:`) are rejected, because unserializing them can run code; see Security and privacy below.
+Sequential integer keys become JSON arrays; associative keys become JSON objects. Null, booleans, integers, floats, strings, arrays, and nested combinations are supported. A reference (`R:`) becomes a copy of the value it points to. An object (`O:`) becomes a JSON object of its properties, private and protected ones included. Its class is never loaded, because unserializing a real object can run code; see Security and privacy below.
 
 ## Working with WordPress serialized data
 
@@ -76,7 +76,7 @@ Read the [WordPress serialized data guide]({{ route('guides.wordpress-serialized
 
 ## Security and privacy
 
-Treat serialized data as untrusted input. This converter calls PHP with `allowed_classes` set to `false`, rejects decoded objects, limits input to 262,144 bytes, and caps decoding depth.
+Treat serialized data as untrusted input. This converter calls PHP with `allowed_classes` set to `false`, reads every object as plain data without loading its class, rejects custom-serialized objects and enums, limits input to 262,144 bytes, and caps decoding depth.
 
 The submitted value and JSON result are processed in memory and never stored or logged. Still, remove passwords, tokens and personal data before submitting. Read the [privacy and retention details]({{ route('privacy') }}) for the technical metadata that is kept.
 

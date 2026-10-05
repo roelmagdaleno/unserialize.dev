@@ -33,7 +33,7 @@ class Serialized extends Component
      * The home page meta description, shared with the route metadata and the
      * structured data so both describe the converter the same way.
      */
-    public const string META_DESCRIPTION = 'Unserialize PHP data online and view it as readable JSON. Private by default: nothing is stored, and PHP objects are rejected for safety.';
+    public const string META_DESCRIPTION = 'Unserialize PHP data online and view it as readable JSON. Private by default: nothing is stored, and unsafe PHP objects are rejected.';
 
     /**
      * The home page Open Graph and Twitter description, shorter than the meta

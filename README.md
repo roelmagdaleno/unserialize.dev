@@ -14,7 +14,7 @@ All three share the same converter, so the results are identical. Nothing you su
 
 ## Behavior and privacy
 
-Supported values include `null`, booleans, integers, floats, strings, indexed arrays, associative arrays, and nested combinations of those values. Serialized objects are rejected. Inputs are capped at 262,144 bytes and decoding depth is capped at 512.
+Supported values include `null`, booleans, integers, floats, strings, indexed arrays, associative arrays, objects of any class, and nested combinations of those values. An object converts to its properties without its class ever being loaded; custom-serialized objects (`C:`) and enums are rejected. Inputs are capped at 262,144 bytes and decoding depth is capped at 512.
 
 New conversions are processed in memory and create no `outputs` database record. Submitted values and converted content are excluded from application telemetry. Existing legacy `/o/{uuid}` records remain readable for compatibility and are returned with `noindex` directives. See the public [privacy contract](https://unserialize.dev/privacy), [security guidance](https://unserialize.dev/#security), and the implementation in [`app/Services/Serialized.php`](app/Services/Serialized.php).
 

@@ -31,7 +31,7 @@ enum ConversionErrorCode: string
                 number_format(Serialized::MAX_INPUT_BYTES),
             ),
             self::InvalidInput => 'Invalid serialized data.',
-            self::UnsupportedObject => 'Serialized objects are not supported.',
+            self::UnsupportedObject => 'Custom-serialized objects and enums are not supported.',
         };
     }
 }

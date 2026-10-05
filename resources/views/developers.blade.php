@@ -1,7 +1,7 @@
 <x-layouts.app>
     <article class="mt-10 max-w-4xl space-y-6 leading-7 text-zinc-700 dark:text-zinc-300">
         <h1 class="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-white">API and MCP developer guide</h1>
-        <p>Unserialize exposes the same stateless conversion behavior through a versioned JSON API and one read-only MCP tool. Both interfaces reject serialized objects, accept at most 262,144 input bytes, and retain neither submitted data nor converted output.</p>
+        <p>Unserialize exposes the same stateless conversion behavior through a versioned JSON API and one read-only MCP tool. Both interfaces convert serialized objects to JSON objects of their properties, reject custom-serialized objects and enums, accept at most 262,144 input bytes, and retain neither submitted data nor converted output.</p>
 
         <section class="space-y-3" aria-labelledby="http-api">
             <h2 id="http-api" class="text-xl font-semibold text-zinc-950 dark:text-white">HTTP API</h2>
@@ -16,7 +16,7 @@
   },
   "meta": {"retained": false}
 }</pre>
-            <p>When a value cannot be decoded, the <code>invalid_input</code> response adds an <code>error.diagnostic</code> object locating the first problem by byte offset, with a suggested correction where one can be proven. The key is omitted when the failure has no byte position, such as a serialized object. Diagnostics never contain bytes from the submitted value&mdash;use <code>offset</code> and <code>length</code> to index the input you already hold.</p>
+            <p>When a value cannot be decoded, the <code>invalid_input</code> response adds an <code>error.diagnostic</code> object locating the first problem by byte offset, with a suggested correction where one can be proven. The key is omitted when the failure has no byte position, such as an enum. Diagnostics never contain bytes from the submitted value&mdash;use <code>offset</code> and <code>length</code> to index the input you already hold.</p>
 
             <pre class="overflow-x-auto rounded-lg p-4" data-lang="json">{
   "error": {

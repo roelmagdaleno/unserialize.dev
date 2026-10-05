@@ -1,6 +1,6 @@
 # API and MCP developer guide
 
-> Unserialize exposes the same stateless conversion behavior through a versioned JSON API and one read-only MCP tool. Both interfaces reject serialized objects, accept at most 262,144 input bytes, and retain neither submitted data nor converted output.
+> Unserialize exposes the same stateless conversion behavior through a versioned JSON API and one read-only MCP tool. Both interfaces convert serialized objects to JSON objects of their properties, reject custom-serialized objects and enums, accept at most 262,144 input bytes, and retain neither submitted data nor converted output.
 
 ## HTTP API
 
@@ -22,7 +22,7 @@ curl --request POST '{{ url('/api/v1/unserialize') }}' \
 }
 ```
 
-When a value cannot be decoded, the `invalid_input` response adds an `error.diagnostic` object locating the first problem by byte offset, with a suggested correction where one can be proven. The key is omitted when the failure has no byte position, such as a serialized object. Diagnostics never contain bytes from the submitted value—use `offset` and `length` to index the input you already hold.
+When a value cannot be decoded, the `invalid_input` response adds an `error.diagnostic` object locating the first problem by byte offset, with a suggested correction where one can be proven. The key is omitted when the failure has no byte position, such as an enum. Diagnostics never contain bytes from the submitted value—use `offset` and `length` to index the input you already hold.
 
 ```json
 {

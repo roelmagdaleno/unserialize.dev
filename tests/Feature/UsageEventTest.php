@@ -198,6 +198,7 @@ it('records the root result type of a successful api conversion', function (stri
 })->with([
     'list' => ['a:1:{i:0;i:1;}', 'array'],
     'object-like array' => ['a:1:{s:4:"name";s:3:"Roe";}', 'object_array'],
+    'object' => ['O:4:"User":0:{}', 'object'],
     'string' => ['s:3:"abc";', 'string'],
     'integer' => ['i:42;', 'integer'],
     'float' => ['d:1.5;', 'float'],

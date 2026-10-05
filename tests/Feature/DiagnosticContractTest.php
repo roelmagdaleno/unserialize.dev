@@ -253,7 +253,7 @@ it('publishes no diagnostic for a failure with no byte position', function (
 
     $this->fail('Expected the conversion to fail.');
 })->with([
-    'serialized object' => ['O:8:"stdClass":0:{}', ConversionErrorCode::UnsupportedObject],
+    'custom-serialized object' => ['C:11:"ArrayObject":0:{}', ConversionErrorCode::UnsupportedObject],
     'oversized input' => [serialize(str_repeat('a', Serialized::MAX_INPUT_BYTES)), ConversionErrorCode::InputTooLarge],
     'non-UTF-8 string' => ["s:2:\"\xff\xfe\";", ConversionErrorCode::EncodingFailed],
 ]);
@@ -309,23 +309,26 @@ it('converts a payload holding a back reference', function () {
 /**
  * A value containing itself has no JSON form at all.
  *
- * It is reported as an encoding failure rather than a located one, because the
- * converter decodes the payload and encodes the value itself rather than asking the
- * package for JSON a second time. That is the same answer this application gave before
- * the package existed, and the case needs a PHP reference to construct at all.
+ * The package finds the loop while it reads objects as data, so the refusal names the
+ * reference the caller has to break.
  */
-it('refuses a value that contains itself', function () {
-    $loop = [];
-    $loop['self'] = &$loop;
-
+it('refuses a value that contains itself at its first reference', function (string $payload) {
     try {
-        new Serialized(serialize($loop))->convert();
+        new Serialized($payload)->convert();
     } catch (ConversionException $exception) {
-        expect($exception->errorCode)->toBe(ConversionErrorCode::EncodingFailed)
-            ->and($exception->diagnostic)->toBeNull();
+        expect($exception->errorCode)->toBe(ConversionErrorCode::InvalidInput)
+            ->and($exception->diagnostic?->offset)->toBe(strpos($payload, 'R:') ?: strpos($payload, 'r:'));
 
         return;
     }
 
     $this->fail('Expected the conversion to fail.');
-});
+})->with([
+    'array' => (function (): string {
+        $loop = [];
+        $loop['self'] = &$loop;
+
+        return serialize($loop);
+    })(),
+    'object' => 'O:4:"User":1:{s:4:"self";r:1;}',
+]);

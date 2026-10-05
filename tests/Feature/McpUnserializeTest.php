@@ -28,6 +28,18 @@ test('the mcp tool converts serialized input without persistence', function () {
     ]);
 });
 
+test('the mcp tool converts an object to a JSON object', function () {
+    UnserializeServer::tool(ConvertSerializedDataTool::class, [
+        'serialized' => 'O:4:"User":2:{s:4:"name";s:3:"Ada";s:5:"email";s:15:"ada@example.com";}',
+    ])->assertOk()->assertStructuredContent([
+        'data' => [
+            'value' => ['name' => 'Ada', 'email' => 'ada@example.com'],
+            'format' => 'json',
+        ],
+        'meta' => ['retained' => false],
+    ]);
+});
+
 test('the mcp tool exposes stable conversion errors', function (string $serialized, string $code) {
     UnserializeServer::tool(ConvertSerializedDataTool::class, [
         'serialized' => $serialized,
@@ -36,7 +48,7 @@ test('the mcp tool exposes stable conversion errors', function (string $serializ
         ->has('error.message'));
 })->with([
     'invalid input' => ['not serialized', 'invalid_input'],
-    'serialized object' => ['O:8:"stdClass":0:{}', 'unsupported_object'],
+    'custom-serialized object' => ['C:11:"ArrayObject":0:{}', 'unsupported_object'],
     'excessive input' => ['s:'.Serialized::MAX_INPUT_BYTES.':"'.str_repeat('x', Serialized::MAX_INPUT_BYTES).'";', 'input_too_large'],
 ]);
 
@@ -66,7 +78,7 @@ test('mcp discovery describes the single safe conversion tool', function () {
                 'openWorldHint' => false,
             ],
         ])
-        ->and($tool['description'])->toContain('262144 bytes', 'objects are rejected', 'not retained')
+        ->and($tool['description'])->toContain('262144 bytes', 'objects convert to their properties', 'not retained')
         ->and($tool['inputSchema']['properties']['serialized']['maxLength'])->toBe(Serialized::MAX_INPUT_BYTES)
         ->and($tool['inputSchema']['required'])->toBe(['serialized'])
         ->and($tool['inputSchema']['additionalProperties'])->toBeFalse()
@@ -154,7 +166,7 @@ test('the mcp tool returns a located diagnostic for invalid input', function () 
 
 test('the mcp tool omits the diagnostic for failures without a byte position', function () {
     UnserializeServer::tool(ConvertSerializedDataTool::class, [
-        'serialized' => 'O:8:"stdClass":0:{}',
+        'serialized' => 'C:11:"ArrayObject":0:{}',
     ])->assertHasErrors()->assertStructuredContent(fn ($json) => $json
         ->where('error.code', 'unsupported_object')
         ->has('error.message')

@@ -120,7 +120,7 @@ echo json_encode($value, JSON_PRETTY_PRINT);</pre>
                         <tr><td class="p-3">Indexed array</td><td class="p-3"><code>a:2:{i:0;s:3:&quot;red&quot;;i:1;s:4:&quot;blue&quot;;}</code></td><td class="p-3"><code>[&quot;red&quot;, &quot;blue&quot;]</code></td></tr>
                         <tr><td class="p-3">Associative array</td><td class="p-3"><code>a:1:{s:4:&quot;name&quot;;s:3:&quot;Ada&quot;;}</code></td><td class="p-3"><code>{&quot;name&quot;: &quot;Ada&quot;}</code></td></tr>
                         <tr><td class="p-3">Reference</td><td class="p-3"><code>a:2:{i:0;s:1:&quot;x&quot;;i:1;R:2;}</code></td><td class="p-3"><code>[&quot;x&quot;, &quot;x&quot;]</code></td></tr>
-                        <tr><td class="p-3">Object</td><td class="p-3"><code>O:8:&quot;stdClass&quot;:1:{s:4:&quot;name&quot;;s:3:&quot;Ada&quot;;}</code></td><td class="p-3">Rejected</td></tr>
+                        <tr><td class="p-3">Object</td><td class="p-3"><code>O:4:&quot;User&quot;:1:{s:4:&quot;name&quot;;s:3:&quot;Ada&quot;;}</code></td><td class="p-3"><code>{&quot;name&quot;: &quot;Ada&quot;}</code></td></tr>
                     </tbody>
                 </table>
             </div>
@@ -140,7 +140,7 @@ echo json_encode($value, JSON_PRETTY_PRINT);</pre>
                 </div>
             </div>
 
-            <p class="mt-6 leading-7">Sequential integer keys become JSON arrays; associative keys become JSON objects. Null, booleans, integers, floats, strings, arrays, and nested combinations are supported. A reference (<code>R:</code>) becomes a copy of the value it points to. Serialized objects (<code>O:</code>) are rejected, because unserializing them can run code; see <a class="text-blue-900 underline dark:text-blue-300" href="#security">Security and privacy</a>.</p>
+            <p class="mt-6 leading-7">Sequential integer keys become JSON arrays; associative keys become JSON objects. Null, booleans, integers, floats, strings, arrays, and nested combinations are supported. A reference (<code>R:</code>) becomes a copy of the value it points to. An object (<code>O:</code>) becomes a JSON object of its properties, private and protected ones included. Its class is never loaded, because unserializing a real object can run code; see <a class="text-blue-900 underline dark:text-blue-300" href="#security">Security and privacy</a>.</p>
         </section>
 
         <section id="wordpress" class="scroll-mt-6" aria-labelledby="wordpress-data">
@@ -153,7 +153,7 @@ echo json_encode($value, JSON_PRETTY_PRINT);</pre>
 
         <section id="security" class="scroll-mt-6" aria-labelledby="security-and-privacy">
             <h2 id="security-and-privacy" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Security and privacy</h2>
-            <p class="mt-3 leading-7">Treat serialized data as untrusted input. This converter calls PHP with <code>allowed_classes</code> set to <code>false</code>, rejects decoded objects, limits input to 262,144 bytes, and caps decoding depth.</p>
+            <p class="mt-3 leading-7">Treat serialized data as untrusted input. This converter calls PHP with <code>allowed_classes</code> set to <code>false</code>, reads every object as plain data without loading its class, rejects custom-serialized objects and enums, limits input to 262,144 bytes, and caps decoding depth.</p>
             <p class="mt-3 leading-7">The submitted value and JSON result are processed in memory and never stored or logged. Still, remove passwords, tokens and personal data before submitting. Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('privacy') }}">privacy and retention details</a> for the technical metadata that is kept.</p>
         </section>
 
