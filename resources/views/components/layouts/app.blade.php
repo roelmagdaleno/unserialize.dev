@@ -23,12 +23,17 @@
     <main class="container mx-auto mt-8 p-8">
         <header class="flex items-start justify-between gap-6">
             <div>
-                <h1 class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl dark:text-white">
-                    <a href="{{ route('home') }}">Unserialize</a>
-                </h1>
-                <p class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
-                    Unserialize PHP data online and convert it to clean, readable JSON.
-                </p>
+                <a href="{{ route('home') }}" class="text-4xl font-bold tracking-tight text-gray-900 sm:text-6xl dark:text-white">Unserialize</a>
+                {{-- Only the home page's tagline is its H1; every other page puts its own title in the H1. --}}
+                @if(Route::is('home'))
+                    <h1 class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
+                        Unserialize PHP data online and convert it to clean, readable JSON.
+                    </h1>
+                @else
+                    <p class="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-300">
+                        Unserialize PHP data online and convert it to clean, readable JSON.
+                    </p>
+                @endif
             </div>
 
             <div class="flex items-center gap-1">

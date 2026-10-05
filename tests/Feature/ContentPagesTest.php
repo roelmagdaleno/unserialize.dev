@@ -24,7 +24,13 @@ it('keeps published examples aligned with the conversion service', function (str
 })->with([
     'homepage example' => ['a:2:{s:4:"name";s:6:"Chrome";s:6:"active";b:1;}', ['name' => 'Chrome', 'active' => true]],
     'WordPress example' => ['a:2:{s:10:"show_title";b:1;s:14:"posts_per_page";i:10;}', ['show_title' => true, 'posts_per_page' => 10]],
+    'reference example' => ['a:2:{i:0;s:1:"x";i:1;R:2;}', ['x', 'x']],
 ]);
+
+it('rejects the object example the home page publishes as rejected', function () {
+    expect(fn () => (new Serialized('O:8:"stdClass":1:{s:4:"name";s:3:"Ada";}'))->convert())
+        ->toThrow(ConversionException::class, 'Serialized objects are not supported.');
+});
 
 it('publishes developer instructions for both stateless interfaces', function () {
     $this->get(route('developers'))
@@ -54,6 +60,19 @@ it('shows the online converter tagline on every public page', function (string $
         ->assertOk()
         ->assertSee('Unserialize PHP data online and convert it to clean, readable JSON.');
 })->with(['home', 'guides.wordpress-serialized-data', 'guides.broken-serialized-string', 'privacy', 'developers']);
+
+it('gives every public page one H1 naming its own topic', function (string $routeName, string $heading) {
+    $html = $this->get(route($routeName))->assertOk()->getContent();
+
+    expect(substr_count($html, '<h1'))->toBe(1)
+        ->and($html)->toMatch('/<h1[^>]*>\s*'.preg_quote($heading, '/').'/');
+})->with([
+    'home' => ['home', 'Unserialize PHP data online'],
+    'WordPress guide' => ['guides.wordpress-serialized-data', 'WordPress serialized data'],
+    'broken string guide' => ['guides.broken-serialized-string', 'Fix a broken PHP serialized string'],
+    'privacy' => ['privacy', 'Privacy and retention'],
+    'developers' => ['developers', 'API and MCP developer guide'],
+]);
 
 it('answers the frequently asked questions in expandable details on the home page', function () {
     $questions = (new FrequentlyAskedQuestions)->all();

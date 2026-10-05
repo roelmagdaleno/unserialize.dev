@@ -66,12 +66,16 @@ class FrequentlyAskedQuestions
                 'markdown' => 'No. Each function reads a different format. `json_decode()` reads JSON, such as `{"name":"Ada"}`. `unserialize()` reads PHP\'s own serialized format, such as `a:1:{s:4:"name";s:3:"Ada";}`, which stores type markers and byte lengths. If your value starts with `a:`, `s:`, `i:` or `b:`, it is serialized PHP: paste it above to get JSON. If it starts with `{` or `[`, it is already JSON.',
             ],
             [
-                'question' => 'How do I convert PHP serialized data to JSON?',
-                'markdown' => 'Paste the complete serialized value into the converter at the top of this page and select **Unserialize**. The JSON result appears below it, ready to copy. In your own code, call `unserialize($value, [\'allowed_classes\' => false])` and pass the result to `json_encode()`. Developers and AI agents can also convert through the [JSON API and MCP tool]('.route('developers').').',
+                'question' => 'Can I convert JSON back to serialized PHP?',
+                'markdown' => 'Not with this converter: it only turns serialized PHP into JSON. In PHP, decode the JSON with `json_decode($json, true)` and pass the result to `serialize()`. The `true` makes JSON objects become associative arrays instead of `stdClass` objects, so the serialized value contains no objects.',
             ],
             [
                 'question' => 'Why does my serialized string fail to unserialize?',
                 'markdown' => 'The most common cause is a wrong string length. In `s:5:"hello";` the 5 is the length in bytes, not characters, so `é` counts as 2. A database search-and-replace that changes a URL without updating its length breaks the value. Truncated values and missing semicolons or braces fail too. When a conversion fails here, the error panel shows the exact byte where the problem starts.',
+            ],
+            [
+                'question' => 'How do I fix a broken serialized string?',
+                'markdown' => 'Paste it into the converter above. When it cannot be read, the error panel marks the byte where the problem starts and, when it can, suggests the correction, such as changing `s:19:` to `s:27:`. Correct each length to the real byte count of its string. If the value was truncated, restore it from a backup instead. The [guide to fixing a broken serialized string]('.route('guides.broken-serialized-string').') walks through each cause.',
             ],
             [
                 'question' => 'Is it safe to unserialize untrusted data?',

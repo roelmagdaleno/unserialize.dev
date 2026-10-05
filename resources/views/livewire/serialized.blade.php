@@ -80,19 +80,21 @@
 <article class="mt-14 max-w-4xl border-t border-zinc-200 pt-10 text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
     <div class="space-y-12">
         <section aria-labelledby="how-to-convert">
-            <h2 id="how-to-convert" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">How to convert PHP serialized data</h2>
-            <p class="mt-3 leading-7">Paste a value produced by PHP's <code>serialize()</code> function into the converter above, click on <strong>Unserialize</strong>, then review or copy the readable JSON result.</p>
+            <h2 id="how-to-convert" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">How to convert PHP serialized data to JSON</h2>
+            <p class="mt-3 leading-7">Paste a serialized string produced by PHP's <code>serialize()</code> function into the converter above, click <strong>Unserialize</strong>, then review or copy the readable JSON result. You see the decoded structure without running PHP yourself.</p>
             <ol class="mt-4 list-decimal space-y-2 pl-6 leading-7">
                 <li>Copy the complete serialized value, including its type markers, lengths, and delimiters.</li>
-                <li>Paste it into the editor and click on <strong>Unserialize</strong>.</li>
+                <li>Paste it into the editor and click <strong>Unserialize</strong>.</li>
                 <li>Use the JSON result to inspect the structure without editing the original value by hand.</li>
             </ol>
-        </section>
 
-        <section aria-labelledby="why-unserialize">
-            <h2 id="why-unserialize" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Why I built Unserialize</h2>
-            <p class="mt-3 leading-7">I kept running into serialized data while working with WordPress. The online tools I used could decode it, but they did not turn the result into clean JSON, so the data was still harder to read than it needed to be.</p>
-            <p class="mt-3 leading-7">I built Unserialize with modern web technology to make that everyday task simpler for me—and for other developers who run into the same problem. It turns PHP serialized values into a familiar, readable format without storing the submitted input or result.</p>
+            <h3 class="mt-8 text-lg font-semibold text-zinc-950 dark:text-white">Convert it in your own PHP code</h3>
+            <p class="mt-3 leading-7">Call <code>unserialize()</code> with <code>allowed_classes</code> set to <code>false</code>, then pass the result to <code>json_encode()</code>. <code>unserialize()</code> returns <code>false</code> when the value is invalid.</p>
+            <pre class="mt-4 overflow-x-auto rounded-lg p-4" data-lang="php">$value = unserialize($serialized, ['allowed_classes' => false]);
+
+echo json_encode($value, JSON_PRETTY_PRINT);</pre>
+            <p class="mt-4 leading-7">Need the PHP array instead of JSON? Pass the unserialized value to <code>print_r()</code> or <code>var_export()</code> in place of <code>json_encode()</code>. The WordPress guide explains how to <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('guides.wordpress-serialized-data') }}#php-array">read serialized data as a PHP array</a>.</p>
+            <p class="mt-4 leading-7">Developers and AI agents can also convert without the browser form through the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('developers') }}">JSON API and MCP tool</a>.</p>
         </section>
 
         <section id="format" class="scroll-mt-6" aria-labelledby="serialization-format">
@@ -117,11 +119,13 @@
                         <tr><td class="p-3">String</td><td class="p-3"><code>s:5:&quot;hello&quot;;</code></td><td class="p-3"><code>&quot;hello&quot;</code></td></tr>
                         <tr><td class="p-3">Indexed array</td><td class="p-3"><code>a:2:{i:0;s:3:&quot;red&quot;;i:1;s:4:&quot;blue&quot;;}</code></td><td class="p-3"><code>[&quot;red&quot;, &quot;blue&quot;]</code></td></tr>
                         <tr><td class="p-3">Associative array</td><td class="p-3"><code>a:1:{s:4:&quot;name&quot;;s:3:&quot;Ada&quot;;}</code></td><td class="p-3"><code>{&quot;name&quot;: &quot;Ada&quot;}</code></td></tr>
+                        <tr><td class="p-3">Reference</td><td class="p-3"><code>a:2:{i:0;s:1:&quot;x&quot;;i:1;R:2;}</code></td><td class="p-3"><code>[&quot;x&quot;, &quot;x&quot;]</code></td></tr>
+                        <tr><td class="p-3">Object</td><td class="p-3"><code>O:8:&quot;stdClass&quot;:1:{s:4:&quot;name&quot;;s:3:&quot;Ada&quot;;}</code></td><td class="p-3">Rejected</td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <h3 class="mt-8 text-lg font-semibold text-zinc-950 dark:text-white">Tested example</h3>
+            <h3 class="mt-8 text-lg font-semibold text-zinc-950 dark:text-white">Example: serialized PHP array to JSON</h3>
             <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
                     <h4 class="font-semibold text-zinc-950 dark:text-white">Serialized PHP</h4>
@@ -136,19 +140,28 @@
                 </div>
             </div>
 
-            <p class="mt-6 leading-7">Sequential integer keys become JSON arrays; associative keys become JSON objects. Null, booleans, integers, floats, strings, arrays, and nested combinations are supported. Serialized objects are rejected.</p>
+            <p class="mt-6 leading-7">Sequential integer keys become JSON arrays; associative keys become JSON objects. Null, booleans, integers, floats, strings, arrays, and nested combinations are supported. A reference (<code>R:</code>) becomes a copy of the value it points to. Serialized objects (<code>O:</code>) are rejected, because unserializing them can run code; see <a class="text-blue-900 underline dark:text-blue-300" href="#security">Security and privacy</a>.</p>
         </section>
 
         <section id="wordpress" class="scroll-mt-6" aria-labelledby="wordpress-data">
             <h2 id="wordpress-data" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Working with WordPress serialized data</h2>
-            <p class="mt-3 leading-7">WordPress stores arrays in options and post meta as serialized PHP. Paste a value from WP-CLI or a read-only database client above to inspect it as JSON. Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('guides.wordpress-serialized-data') }}">WordPress serialized data guide</a> to read it as a PHP array and edit it safely, or <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('guides.broken-serialized-string') }}">fix a broken serialized string</a>.</p>
+            <p class="mt-3 leading-7">WordPress serializes every array it saves. You find these values in <code>wp_options</code> (plugin settings, <code>widget_*</code> options and <code>theme_mods_*</code>) and in the <code>meta_value</code> column of <code>wp_postmeta</code>, <code>wp_usermeta</code> and <code>wp_termmeta</code>. WordPress reads them back with <code>maybe_unserialize()</code>, which leaves values that are not serialized alone.</p>
+            <p class="mt-3 leading-7">Paste a value from WP-CLI or a read-only database client above to inspect it as JSON. Never change a serialized value with a plain SQL search and replace: each string stores its length in bytes, so new text with the old length breaks the value. Use <code>wp search-replace</code>, which re-serializes each value for you.</p>
+            <p class="mt-3 leading-7">Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('guides.wordpress-serialized-data') }}">WordPress serialized data guide</a> to read it as a PHP array and edit it safely, or <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('guides.broken-serialized-string') }}">fix a broken serialized string</a>.</p>
             <p class="mt-3 leading-7"><strong>Back up the database before making changes.</strong> Redact secrets and personal data before pasting a value into any web tool.</p>
         </section>
 
         <section id="security" class="scroll-mt-6" aria-labelledby="security-and-privacy">
             <h2 id="security-and-privacy" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Security and privacy</h2>
             <p class="mt-3 leading-7">Treat serialized data as untrusted input. This converter calls PHP with <code>allowed_classes</code> set to <code>false</code>, rejects decoded objects, limits input to 262,144 bytes, and caps decoding depth.</p>
-            <p class="mt-3 leading-7">Conversions are processed in memory and the submitted value and JSON result are not stored or logged. Technical usage metadata such as your User-Agent and the request URL is kept locally for a limited period. Even so, remove passwords, tokens, email addresses, private URLs, and other sensitive information before submitting data. Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('privacy') }}">privacy and retention details</a> for the complete policy.</p>
+            <p class="mt-3 leading-7">The submitted value and JSON result are processed in memory and never stored or logged. Still, remove passwords, tokens and personal data before submitting. Read the <a class="text-blue-900 underline dark:text-blue-300" href="{{ route('privacy') }}">privacy and retention details</a> for the technical metadata that is kept.</p>
+        </section>
+
+        <section aria-labelledby="why-unserialize">
+            <h2 id="why-unserialize" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Why I built Unserialize</h2>
+            <p class="mt-3 leading-7">I kept running into serialized data while working with WordPress. The online tools I used could decode it, but they did not turn the result into clean JSON, so the data was still harder to read than it needed to be.</p>
+            <p class="mt-3 leading-7">I built Unserialize with modern web technology to make that everyday task simpler for me—and for other developers who run into the same problem. It turns PHP serialized values into a familiar, readable format without storing the submitted input or result.</p>
+            <p class="mt-3 leading-7">— Roel Magdaleno Ramón (<a class="text-blue-900 underline dark:text-blue-300" href="https://github.com/roelmagdaleno" rel="author">GitHub</a>, <a class="text-blue-900 underline dark:text-blue-300" href="https://x.com/Roel7nxju0">X</a>)</p>
         </section>
 
         <section id="faq" class="scroll-mt-6" aria-labelledby="faq-heading">
