@@ -17,7 +17,7 @@ use Serialized\SerializedConverter;
  * The grammar, the safety rules and the byte-level diagnostics all belong to
  * `roelmagdaleno/serialized`. What stays here is this application's side of the
  * contract: the limits it publishes, the error vocabulary its three surfaces
- * share, and the refusal to restore an object from a payload.
+ * share, and reading every object as data rather than restoring its class.
  *
  * Conversion happens at most once per instance. The result or the failure that
  * stopped it is kept, so a second call never re-reads the payload.
@@ -90,14 +90,19 @@ class Serialized
     /**
      * The converter every surface shares, configured to this application's limits.
      *
-     * No class is ever allowed, so no payload can reach PHP's object instantiation
-     * and nothing from a payload is ever constructed.
+     * Every object is read as data, and no class is allowed:
+     *
+     * - An object of any class comes back as its properties. The class is never loaded
+     *   or instantiated, so nothing from a payload runs.
+     * - Custom-serialized objects and enums are refused before PHP reads the payload.
+     *   Never allow a class here: allowing one runs its magic methods on payload data.
      */
     private static function converter(): SerializedConverter
     {
         return Package::make()
             ->withMaxBytes(self::MAX_INPUT_BYTES)
-            ->withMaxDepth(self::MAX_DEPTH);
+            ->withMaxDepth(self::MAX_DEPTH)
+            ->objectsAsData();
     }
 
     /**
@@ -105,18 +110,14 @@ class Serialized
      *
      * The value is encoded here rather than by a second call to the package, which
      * would re-read and re-validate the whole payload to reach a value already in
-     * hand. Nothing is lost by doing so: the package normalizes objects on its way
-     * to JSON, and this application allows none, so every value reaching this point
-     * is a scalar, an array or null. `ConversionEncodingTest` pins the two outputs
+     * hand. Nothing is lost by doing so: with objects read as data, the package hands
+     * back every object already normalized to a `stdClass` of its properties, which is
+     * exactly what it would encode. `ConversionEncodingTest` pins the two outputs
      * against each other, so a normalization that ever does start to matter fails
      * there rather than silently changing what the site returns.
      *
-     * One case does differ, and deliberately. The package spots a value that contains
-     * itself while normalizing and names the byte the loop starts from; reaching that
-     * would cost a second read of every payload to catch a shape that needs a PHP
-     * reference to build. Here `json_encode()` reports it instead, so the payload is
-     * refused as an encoding failure -- which is the answer this application gave for
-     * it before the package existed.
+     * A value that contains itself never reaches this point: the package refuses it
+     * while reading objects as data, naming the reference that closes the loop.
      *
      * @throws ConversionException If the value cannot be encoded.
      */

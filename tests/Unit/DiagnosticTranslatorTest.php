@@ -32,6 +32,7 @@ function refusalFor(string $payload): SerializedException
         Package::make()
             ->withMaxBytes(Converter::MAX_INPUT_BYTES)
             ->withMaxDepth(Converter::MAX_DEPTH)
+            ->objectsAsData()
             ->toJson($payload);
     } catch (SerializedException $exception) {
         return $exception;
@@ -46,7 +47,7 @@ it('names the error code behind every kind of refusal', function (string $payloa
     expect($translator->errorCodeFor(refusalFor($payload)))->toBe($errorCode);
 })->with([
     'malformed payload' => ['a:2:{i:0;i:1;}', ConversionErrorCode::InvalidInput],
-    'serialized object' => ['O:8:"stdClass":0:{}', ConversionErrorCode::UnsupportedObject],
+    'enum case inside an object' => ['O:4:"User":1:{s:1:"a";E:11:"Suit:Hearts";}', ConversionErrorCode::UnsupportedObject],
     'custom-serialized object' => ['C:11:"ArrayObject":0:{}', ConversionErrorCode::UnsupportedObject],
     'enum case' => ['E:11:"Suit:Hearts";', ConversionErrorCode::UnsupportedObject],
     'circular reference' => [circularPayload(), ConversionErrorCode::InvalidInput],
@@ -71,7 +72,7 @@ it('publishes no diagnostic for a refusal that names no byte', function (string 
 
     expect($translator->diagnosticFor($exception, strlen($payload)))->toBeNull();
 })->with([
-    'serialized object' => 'O:8:"stdClass":0:{}',
+    'custom-serialized object' => 'C:11:"ArrayObject":0:{}',
     'enum case' => 'E:11:"Suit:Hearts";',
     'non-UTF-8 string' => "s:2:\"\xff\xfe\";",
     'non-finite float' => 'd:NAN;',
@@ -133,6 +134,15 @@ it('translates every located failure into a published category', function (
     'array count mismatch' => [
         'a:2:{i:0;i:1;}', SyntaxErrorCode::ArrayCountMismatch, 0, 4,
         'The array starting at byte 0 declares 2 elements but contains 1.', 'Change `a:2:` to `a:1:`.',
+    ],
+    'object count mismatch' => [
+        'O:4:"User":2:{s:1:"a";i:1;}', SyntaxErrorCode::ArrayCountMismatch, 0, 13,
+        'The object starting at byte 0 declares 2 properties but contains 1.',
+        'Change the declared property count from 2 to 1.',
+    ],
+    'unclosed object' => [
+        'O:4:"User":1:{s:1:"a";i:1;', SyntaxErrorCode::UnexpectedEnd, 0, 0,
+        'The object starting at byte 0 is missing its closing brace.', null,
     ],
     'impossible element count' => [
         'a:1:{', SyntaxErrorCode::ArrayCountMismatch, 2, 3,
@@ -256,7 +266,8 @@ it('never quotes a byte of the submitted payload', function (string $payload) {
     'in a malformed integer' => 'i:SECRET;',
     'in an unknown marker' => 'SECRET',
     'in a string that outruns its length' => 'a:1:{s:4:"SECRET";i:1;}',
-    'in a class name' => 'O:6:"SECRET":0:{}',
+    'in a class name' => 'C:6:"SECRET":0:{}',
+    'in the class name of a miscounted object' => 'O:6:"SECRET":2:{s:1:"a";i:1;}',
     'in an escaped string' => 'S:2:"\\zzSECRET";',
     'after a complete value' => 'i:1;SECRET',
 ]);

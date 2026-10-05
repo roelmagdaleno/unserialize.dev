@@ -28,6 +28,16 @@ it('returns 200 with a structured native value without persistence', function ()
     ]);
 });
 
+it('returns 200 with objects encoded as JSON objects', function (string $serializedData, string $expectedValue) {
+    $response = $this->postJson('/api/v1/unserialize', ['serialized' => $serializedData])->assertOk();
+
+    expect($response->getContent())->toContain('"value":'.$expectedValue.',');
+})->with([
+    'object with a property' => ['O:8:"stdClass":1:{s:4:"name";s:3:"Ada";}', '{"name":"Ada"}'],
+    'empty object' => ['O:8:"stdClass":0:{}', '{}'],
+    'object of an unknown class' => ['O:4:"User":2:{s:4:"name";s:3:"Ada";s:5:"email";s:15:"ada@example.com";}', '{"name":"Ada","email":"ada@example.com"}'],
+]);
+
 it('returns 422 with the stable validation envelope for a missing field', function () {
     $this->postJson('/api/v1/unserialize')
         ->assertUnprocessable()
@@ -77,7 +87,7 @@ it('returns 422 with stable conversion error codes', function (string $serialize
         'count' => 1,
     ]);
 })->with([
-    'unsupported object' => ['O:8:"stdClass":0:{}', 'unsupported_object', 'Serialized objects are not supported.'],
+    'unsupported object' => ['C:11:"ArrayObject":0:{}', 'unsupported_object', 'Custom-serialized objects and enums are not supported.'],
     'encoding failure' => ['a:1:{s:5:"value";d:NAN;}', 'encoding_failed', 'Failed to encode the serialized data to JSON.'],
 ]);
 
@@ -114,7 +124,7 @@ it('omits the diagnostic for failures that have no byte position', function (str
         ->assertJsonPath('error.code', $code)
         ->assertJsonMissingPath('error.diagnostic');
 })->with([
-    'unsupported object' => ['O:8:"stdClass":0:{}', 'unsupported_object'],
+    'unsupported object' => ['C:11:"ArrayObject":0:{}', 'unsupported_object'],
     'encoding failure' => ['a:1:{s:5:"value";d:NAN;}', 'encoding_failed'],
 ]);
 

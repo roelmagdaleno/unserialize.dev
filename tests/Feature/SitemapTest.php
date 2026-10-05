@@ -6,6 +6,8 @@ it('lists only canonical public pages in the XML sitemap', function () {
     $response
         ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
         ->assertSee(route('home'), false)
+        ->assertSee(route('guides.wordpress-serialized-data'), false)
+        ->assertSee(route('guides.broken-serialized-string'), false)
         ->assertSee(route('privacy'), false)
         ->assertSee(route('developers'), false)
         ->assertDontSee('/o/', false)
@@ -21,6 +23,8 @@ it('publishes concise agent discovery with canonical documentation only', functi
         ->assertHeader('Content-Type', 'text/markdown; charset=UTF-8')
         ->assertHeader('Cache-Control', 'max-age=3600, public')
         ->assertSee('https://unserialize.dev/developers', false)
+        ->assertSee('https://unserialize.dev/guides/wordpress-serialized-data', false)
+        ->assertSee('https://unserialize.dev/guides/fix-broken-serialized-string', false)
         ->assertSee('https://unserialize.dev/openapi.json', false)
         ->assertSee('Accept: text/markdown', false)
         ->assertDontSee('/o/', false);

@@ -66,6 +66,7 @@ readonly class UsageContext
     {
         return match (true) {
             is_array($value) => array_is_list($value) ? 'array' : 'object_array',
+            is_object($value) => 'object',
             is_string($value) => 'string',
             is_int($value) => 'integer',
             is_float($value) => 'float',

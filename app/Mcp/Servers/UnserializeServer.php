@@ -14,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 
 #[Name(UnserializeServer::NAME)]
 #[Version(UnserializeServer::VERSION)]
-#[Instructions('Convert untrusted PHP serialized values to structured JSON. Inputs are limited to 262144 bytes, objects are rejected, and conversions are not retained.')]
+#[Instructions('Convert untrusted PHP serialized values to structured JSON. Inputs are limited to 262144 bytes, objects convert to their properties, and conversions are not retained.')]
 /**
  * The MCP server exposing this application's single conversion tool.
  *

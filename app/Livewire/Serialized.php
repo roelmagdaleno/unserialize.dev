@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Data\FrequentlyAskedQuestions;
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
@@ -32,7 +33,7 @@ class Serialized extends Component
      * The home page meta description, shared with the route metadata and the
      * structured data so both describe the converter the same way.
      */
-    public const string META_DESCRIPTION = 'Unserialize PHP data online and view it as readable JSON. Private by default: nothing is stored, and PHP objects are rejected for safety.';
+    public const string META_DESCRIPTION = 'Unserialize PHP data online and view it as readable JSON. Private by default: nothing is stored, and unsafe PHP objects are rejected.';
 
     /**
      * The home page Open Graph and Twitter description, shorter than the meta
@@ -94,6 +95,11 @@ class Serialized extends Component
     private const string AUTHOR_GITHUB_URL = 'https://github.com/roelmagdaleno';
 
     /**
+     * The X profile that identifies the converter's author.
+     */
+    private const string AUTHOR_X_URL = 'https://x.com/Roel7nxju0';
+
+    /**
      * Publish the converter's structured data alongside the head metadata the
      * home route already declares.
      *
@@ -101,8 +107,10 @@ class Serialized extends Component
      *   reference that node instead of repeating it.
      * - `WebSite` belongs on the home page only, where search engines read the
      *   site name from.
+     * - The FAQ structured data comes from the same source as the visible
+     *   questions, so the two cannot drift.
      */
-    public function mount(): void
+    public function mount(FrequentlyAskedQuestions $questions): void
     {
         $homeUrl = url('/').'/';
         $author = ['@id' => $homeUrl.'#author'];
@@ -112,7 +120,7 @@ class Serialized extends Component
                 ->set('@id', $author['@id'])
                 ->name('Roel Magdaleno Ramón')
                 ->url(self::AUTHOR_GITHUB_URL)
-                ->sameAs([self::AUTHOR_GITHUB_URL])
+                ->sameAs([self::AUTHOR_GITHUB_URL, self::AUTHOR_X_URL])
         );
 
         Head::schema(
@@ -136,6 +144,8 @@ class Serialized extends Component
                         ->currency('USD')
                 )
         );
+
+        Head::schema(Schema::faq()->questions($questions->forStructuredData()));
     }
 
     /**
@@ -250,6 +260,8 @@ class Serialized extends Component
      */
     public function render(): View
     {
-        return view('livewire.serialized');
+        return view('livewire.serialized', [
+            'questions' => app(FrequentlyAskedQuestions::class)->all(),
+        ]);
     }
 }

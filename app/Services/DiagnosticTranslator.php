@@ -123,8 +123,9 @@ class DiagnosticTranslator
     /**
      * Whether an unsafe payload names a class this application will not restore.
      *
-     * Every case the package raises here is about a class, and no class is ever
-     * allowed, so they all reduce to one answer.
+     * Every object is read as data, so the package raises these only for the
+     * custom-serialized objects and enums it cannot read that way, and they all reduce
+     * to one answer.
      */
     private function unsafeErrorCode(?DiagnosticCode $code): ConversionErrorCode
     {
@@ -134,14 +135,16 @@ class DiagnosticTranslator
     /**
      * Whether a value JSON cannot carry can be blamed on a byte.
      *
-     * A value containing itself is the one case with a location to report: it is a
-     * structural problem the caller can find and fix in the payload, so it is reported
-     * as invalid input rather than as an encoding failure with nothing to point at.
+     * A value containing itself and a property named after PHP's incomplete-class
+     * marker are the cases with a location to report: each is a structural problem the
+     * caller can find and fix in the payload, so it is reported as invalid input rather
+     * than as an encoding failure with nothing to point at.
      */
     private function unrepresentableErrorCode(?DiagnosticCode $code): ConversionErrorCode
     {
         return match ($code) {
-            DiagnosticCode::ContainsReference => ConversionErrorCode::InvalidInput,
+            DiagnosticCode::ContainsReference,
+            DiagnosticCode::ReservedPropertyName => ConversionErrorCode::InvalidInput,
             default => ConversionErrorCode::EncodingFailed,
         };
     }
@@ -195,7 +198,7 @@ class DiagnosticTranslator
             DiagnosticCode::MalformedLength,
             DiagnosticCode::MalformedElementCount => strlen($this->string($diagnostic, 'literal')),
 
-            DiagnosticCode::ElementCountMismatch => $this->arrayHeaderWidth($diagnostic, 'declaredCount'),
+            DiagnosticCode::ElementCountMismatch => $this->structureHeaderWidth($diagnostic),
             DiagnosticCode::ImpossibleElementCount => $this->arrayHeaderWidth($diagnostic, 'declaredCount'),
 
             DiagnosticCode::TrailingBytes => $payloadBytes - $diagnostic->offset,
@@ -218,7 +221,8 @@ class DiagnosticTranslator
             ),
 
             DiagnosticCode::UnclosedStructure => sprintf(
-                'The array starting at byte %d is missing its closing brace.',
+                'The %s starting at byte %d is missing its closing brace.',
+                $this->string($diagnostic, 'structureLabel'),
                 $offset,
             ),
 
@@ -240,9 +244,11 @@ class DiagnosticTranslator
             ),
 
             DiagnosticCode::ElementCountMismatch => sprintf(
-                'The array starting at byte %d declares %d elements but contains %d.',
+                'The %s starting at byte %d declares %d %s but contains %d.',
+                $this->string($diagnostic, 'structureLabel'),
                 $offset,
                 $this->integer($diagnostic, 'declaredCount'),
+                $this->isObject($diagnostic) ? 'properties' : 'elements',
                 $this->integer($diagnostic, 'actualCount'),
             ),
 
@@ -271,6 +277,11 @@ class DiagnosticTranslator
 
             DiagnosticCode::ContainsReference => sprintf(
                 'The reference at byte %d points back into a value that contains it, so the value never ends.',
+                $offset,
+            ),
+
+            DiagnosticCode::ReservedPropertyName => sprintf(
+                'The property name at byte %d is reserved by PHP for the name of the object\'s class.',
                 $offset,
             ),
 
@@ -308,7 +319,7 @@ class DiagnosticTranslator
             DiagnosticCode::MalformedElementCount => 'Write the element count as a number, as in a:2:{...}.',
 
             DiagnosticCode::ElementCountMismatch => sprintf(
-                'Change `a:%d:` to `a:%d:`.',
+                $this->isObject($diagnostic) ? 'Change the declared property count from %d to %d.' : 'Change `a:%d:` to `a:%d:`.',
                 $this->integer($diagnostic, 'declaredCount'),
                 $this->integer($diagnostic, 'actualCount'),
             ),
@@ -325,6 +336,8 @@ class DiagnosticTranslator
             DiagnosticCode::UnbalancedClose => 'Remove the brace, or add the array header it was meant to close.',
 
             DiagnosticCode::ContainsReference => 'Break the loop before serializing: a value that contains itself has no JSON form.',
+
+            DiagnosticCode::ReservedPropertyName => 'Rename the property.',
 
             DiagnosticCode::MaxDepthExceeded,
             DiagnosticCode::MaxElementsExceeded => 'Convert a smaller part of the structure.',
@@ -408,6 +421,31 @@ class DiagnosticTranslator
             'string' => 'Write each escape as a backslash and two hexadecimal digits.',
             default => null,
         };
+    }
+
+    /**
+     * Whether the structure a diagnostic names is an object rather than an array.
+     */
+    private function isObject(Diagnostic $diagnostic): bool
+    {
+        return $this->nullableString($diagnostic, 'className') !== null;
+    }
+
+    /**
+     * How wide the header of the structure a count mismatch names is.
+     *
+     * An object's header spells its class name, which is measured from the context
+     * rather than read from the payload.
+     */
+    private function structureHeaderWidth(Diagnostic $diagnostic): int
+    {
+        $className = $this->nullableString($diagnostic, 'className');
+
+        if ($className === null) {
+            return $this->arrayHeaderWidth($diagnostic, 'declaredCount');
+        }
+
+        return strlen(sprintf('O:%d:"%s":%d:', strlen($className), $className, $this->integer($diagnostic, 'declaredCount')));
     }
 
     /**

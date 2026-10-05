@@ -22,7 +22,7 @@ Route::get('/', Serialized::class)
         NegotiateMarkdownRepresentation::class.':markdown.home',
     ])
     ->withHead(
-        title: 'PHP Unserialize to JSON Converter',
+        title: ['value' => 'Unserialize Online – PHP Unserialize to JSON Converter', 'exact' => true],
         description: Serialized::META_DESCRIPTION,
         canonical: ['value' => $pageUrl('/'), 'forceHttps' => false],
         og: ['url' => $pageUrl('/'), 'description' => Serialized::SOCIAL_DESCRIPTION],
@@ -48,6 +48,63 @@ Route::view('/developers', 'developers')
         canonical: ['value' => $pageUrl('/developers'), 'forceHttps' => false],
         og: ['url' => $pageUrl('/developers')],
     );
+
+/**
+ * Build the `Article` structured data a guide publishes.
+ *
+ * The author is referenced by the `@id` the home page publishes, not repeated.
+ *
+ * @return array<string, mixed>
+ */
+$guideSchema = fn (string $path, string $headline, string $description, string $publishedAt, ?string $modifiedAt = null): array => [
+    '@context' => 'https://schema.org',
+    '@type' => 'TechArticle',
+    'headline' => $headline,
+    'description' => $description,
+    'url' => $pageUrl($path),
+    'mainEntityOfPage' => $pageUrl($path),
+    'author' => ['@id' => url('/').'/#author'],
+    'datePublished' => $publishedAt,
+    'dateModified' => $modifiedAt ?? $publishedAt,
+];
+
+Route::view('/guides/wordpress-serialized-data', 'guides.wordpress-serialized-data')
+    ->name('guides.wordpress-serialized-data')
+    ->middleware(NegotiateMarkdownRepresentation::class.':markdown.guides.wordpress-serialized-data')
+    ->withHead(
+        title: ['value' => 'WordPress Serialized Data: Read, Convert and Edit Safely', 'exact' => true],
+        description: 'Find where WordPress stores serialized PHP, read it as a PHP array or JSON, and edit options and post meta without breaking string lengths.',
+        canonical: ['value' => $pageUrl('/guides/wordpress-serialized-data'), 'forceHttps' => false],
+        og: ['url' => $pageUrl('/guides/wordpress-serialized-data'), 'type' => 'article'],
+        schema: [$guideSchema(
+            '/guides/wordpress-serialized-data',
+            'WordPress serialized data: read, convert and edit it safely',
+            'Find where WordPress stores serialized PHP, read it as a PHP array or JSON, and edit options and post meta without breaking string lengths.',
+            '2026-10-05',
+        )],
+    );
+
+Route::view('/guides/fix-broken-serialized-string', 'guides.fix-broken-serialized-string')
+    ->name('guides.broken-serialized-string')
+    ->middleware(NegotiateMarkdownRepresentation::class.':markdown.guides.fix-broken-serialized-string')
+    ->withHead(
+        title: ['value' => 'Fix a Broken PHP Serialized String (Error at Offset)', 'exact' => true],
+        description: 'Repair a PHP serialized string that fails with an error at offset: wrong lengths after a search and replace, multibyte characters, and truncated values.',
+        canonical: ['value' => $pageUrl('/guides/fix-broken-serialized-string'), 'forceHttps' => false],
+        og: ['url' => $pageUrl('/guides/fix-broken-serialized-string'), 'type' => 'article'],
+        schema: [$guideSchema(
+            '/guides/fix-broken-serialized-string',
+            'Fix a broken PHP serialized string',
+            'Repair a PHP serialized string that fails with an error at offset: wrong lengths after a search and replace, multibyte characters, and truncated values.',
+            '2026-10-05',
+        )],
+    );
+
+/**
+ * The WordPress guide that the home page absorbed and later split out again
+ * keeps its old address working.
+ */
+Route::permanentRedirect('/guides/wordpress', '/guides/wordpress-serialized-data');
 
 Route::get('/sitemap.xml', function () {
     return response()

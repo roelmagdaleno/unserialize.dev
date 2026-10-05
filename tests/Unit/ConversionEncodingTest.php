@@ -9,13 +9,14 @@ use Serialized\Serialized as Package;
  * {@see Converter::convert()} decodes once and encodes the value itself rather than
  * asking the package for JSON a second time, which would re-read and re-validate the
  * whole payload. That shortcut is only safe while the package's normalization has
- * nothing to do, which holds because no class is ever allowed. This is where that
+ * nothing to do, which holds because every object is read as data. This is where that
  * assumption is checked rather than assumed.
  */
 it('encodes exactly what the package would', function (string $payload) {
     $expected = Package::make()
         ->withMaxBytes(Converter::MAX_INPUT_BYTES)
         ->withMaxDepth(Converter::MAX_DEPTH)
+        ->objectsAsData()
         ->toJson($payload);
 
     expect(new Converter($payload)->output())->toBe($expected);
@@ -37,6 +38,12 @@ it('encodes exactly what the package would', function (string $payload) {
     'mixed keys' => 'a:2:{i:0;s:1:"a";s:3:"key";b:1;}',
     'array holding null' => 'a:1:{i:0;N;}',
     'deeply escaped string' => 'S:5:"\\68ello";',
+    'object' => 'O:8:"stdClass":1:{s:4:"name";s:3:"Ada";}',
+    'empty object' => 'O:8:"stdClass":0:{}',
+    'object with a numeric property' => 'O:8:"stdClass":1:{i:0;s:1:"x";}',
+    'object in an array' => 'a:1:{s:4:"user";O:8:"stdClass":1:{s:4:"name";s:3:"Ada";}}',
+    'object of an unknown class' => 'O:4:"User":2:{s:4:"name";s:3:"Ada";s:5:"email";s:15:"ada@example.com";}',
+    'object with private and protected properties' => "O:7:\"Account\":2:{s:13:\"\0Account\0role\";s:5:\"admin\";s:7:\"\0*\0name\";s:3:\"Ada\";}",
 ]);
 
 /**

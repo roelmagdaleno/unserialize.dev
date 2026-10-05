@@ -74,7 +74,7 @@ it('leaves no diagnostic on failures that have no byte position', function (stri
 
     $this->fail('Expected conversion to fail.');
 })->with([
-    'serialized object' => 'O:8:"stdClass":0:{}',
+    'custom-serialized object' => 'C:11:"ArrayObject":0:{}',
     'oversized input' => serialize(str_repeat('a', (256 * 1024) + 1)),
 ]);
 
@@ -105,13 +105,44 @@ it('reports JSON encoding failures without internal details', function () {
     (new Serialized('a:1:{s:5:"value";d:NAN;}'))->output();
 })->throws(Exception::class, 'Failed to encode the serialized data to JSON.');
 
-it('rejects serialized objects without invoking magic methods', function () {
+it('converts serialized objects without invoking magic methods', function () {
     SerializedObjectWithWakeup::$wasInvoked = false;
     $serializedData = serialize(new SerializedObjectWithWakeup);
 
-    expect(fn () => (new Serialized($serializedData))->output())
-        ->toThrow(Exception::class, 'Serialized objects are not supported.')
+    expect((new Serialized($serializedData))->output())->toBe("{\n    \"command\": \"id\"\n}")
         ->and(SerializedObjectWithWakeup::$wasInvoked)->toBeFalse();
+});
+
+it('converts objects of any class to JSON objects', function (string $serializedData, string $expectedJson) {
+    expect((new Serialized($serializedData))->output())->toBe($expectedJson);
+})->with([
+    'object with a property' => ['O:8:"stdClass":1:{s:4:"name";s:3:"Ada";}', "{\n    \"name\": \"Ada\"\n}"],
+    'empty object' => ['O:8:"stdClass":0:{}', '{}'],
+    'object with a numeric property' => ['O:8:"stdClass":1:{i:0;s:1:"x";}', "{\n    \"0\": \"x\"\n}"],
+    'object nested in an array' => ['a:1:{i:0;O:8:"stdClass":0:{}}', "[\n    {}\n]"],
+    'object of an unknown class' => ['O:4:"User":2:{s:4:"name";s:3:"Ada";s:5:"email";s:15:"ada@example.com";}', "{\n    \"name\": \"Ada\",\n    \"email\": \"ada@example.com\"\n}"],
+    'object nested in another object' => [
+        'O:4:"User":2:{s:4:"name";s:3:"Ada";s:7:"address";O:7:"Address":1:{s:4:"city";s:6:"London";}}',
+        "{\n    \"name\": \"Ada\",\n    \"address\": {\n        \"city\": \"London\"\n    }\n}",
+    ],
+]);
+
+it('rejects an enum nested inside an object', function () {
+    (new Serialized('O:4:"User":1:{s:1:"a";E:11:"Suit:Hearts";}'))->convert();
+})->throws(ConversionException::class, 'Custom-serialized objects and enums are not supported.');
+
+it('reports an object holding the incomplete-class marker as invalid input at its byte', function () {
+    try {
+        (new Serialized('O:4:"User":1:{s:27:"__PHP_Incomplete_Class_Name";s:5:"Admin";}'))->convert();
+    } catch (ConversionException $exception) {
+        expect($exception->errorCode)->toBe(ConversionErrorCode::InvalidInput)
+            ->and($exception->diagnostic?->offset)->toBe(20)
+            ->and($exception->diagnostic?->suggestion)->toBe('Rename the property.');
+
+        return;
+    }
+
+    $this->fail('Expected conversion to fail.');
 });
 
 it('returns a typed conversion result with the native value and JSON', function () {
@@ -133,7 +164,7 @@ it('assigns stable categories to conversion failures', function (string $seriali
     $this->fail('Expected conversion to fail.');
 })->with([
     'invalid input' => ['invalid', 'invalid_input'],
-    'unsupported object' => ['O:8:"stdClass":0:{}', 'unsupported_object'],
+    'unsupported object' => ['C:11:"ArrayObject":0:{}', 'unsupported_object'],
     'encoding failure' => ['a:1:{s:5:"value";d:NAN;}', 'encoding_failed'],
 ]);
 
@@ -149,6 +180,8 @@ it('rejects input larger than 256 KiB with a stable category', function () {
 class SerializedObjectWithWakeup
 {
     public static bool $wasInvoked = false;
+
+    public string $command = 'id';
 
     public function __wakeup(): void
     {

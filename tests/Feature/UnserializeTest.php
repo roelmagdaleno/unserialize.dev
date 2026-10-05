@@ -58,12 +58,22 @@ it('displays a valid conversion without persisting it', function () {
     ]);
 });
 
+it('displays a converted object', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'O:4:"User":2:{s:4:"name";s:3:"Ada";s:5:"email";s:15:"ada@example.com";}')
+        ->call('unserialize')
+        ->assertHasNoErrors()
+        ->assertSee('"name": "Ada"');
+
+    $this->assertDatabaseCount('outputs', 0);
+});
+
 it('shows specific feedback for serialized objects without persistence', function () {
     Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'O:8:"stdClass":0:{}')
+        ->set('form.serializedData', 'C:11:"ArrayObject":0:{}')
         ->call('unserialize')
         ->assertHasErrors('form.serializedData')
-        ->assertSee('Serialized objects are not supported.');
+        ->assertSee('Custom-serialized objects and enums are not supported.');
 
     $this->assertDatabaseCount('outputs', 0);
 });
@@ -129,7 +139,10 @@ it('shows a window around the problem instead of the whole value', function () {
         ->assertSee('Change `s:4:` to `s:5:`.')
         ->assertSee('…');
 
-    expect(strlen($component->html()))->toBeLessThan(20_000);
+    preg_match('#<section[^>]*role="alert".*?</section>#s', $component->html(), $panel);
+
+    expect($panel)->not->toBeEmpty()
+        ->and(strlen($panel[0]))->toBeLessThan(20_000);
 });
 
 it('escapes unprintable bytes and never renders submitted markup as HTML', function () {
@@ -162,7 +175,7 @@ it('shows no diagnostic panel for failures that have no byte position', function
         ->assertSet('diagnostic', null)
         ->assertDontSeeHtml('diagnostic-excerpt');
 })->with([
-    'serialized object' => ['O:8:"stdClass":0:{}'],
+    'custom-serialized object' => ['C:11:"ArrayObject":0:{}'],
     'oversized input' => [serialize(str_repeat('a', (256 * 1024) + 1))],
 ]);
 

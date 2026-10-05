@@ -13,7 +13,9 @@ it('returns markdown when a client accepts it', function (string $routeName, str
     expect($response->headers->get('Vary'))->toContain('Accept');
     expect((int) $response->headers->get('X-Markdown-Tokens'))->toBeGreaterThan(0);
 })->with([
-    'home' => ['home', '# Unserialize — PHP Unserialize to JSON Converter'],
+    'home' => ['home', '# Unserialize Online – PHP Unserialize to JSON Converter'],
+    'wordpress guide' => ['guides.wordpress-serialized-data', '# WordPress serialized data: read, convert and edit it safely'],
+    'broken string guide' => ['guides.broken-serialized-string', '# Fix a broken PHP serialized string'],
     'privacy' => ['privacy', '# Privacy and retention'],
     'developer guide' => ['developers', '# API and MCP developer guide'],
 ]);

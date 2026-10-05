@@ -18,7 +18,7 @@ Usage metadata is deleted automatically after {{ config('telemetry.retention_day
 
 ## Limits and unsupported data
 
-Inputs are limited to 262,144 bytes. PHP objects are rejected and classes are disabled during decoding. Invalid data and values that cannot be represented as JSON return an error.
+Inputs are limited to 262,144 bytes. PHP objects are read as plain data: their classes are never loaded and none of their code runs. Invalid data and values that cannot be represented as JSON return an error.
 
 ## Legacy output links
 

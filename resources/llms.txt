@@ -1,12 +1,14 @@
 # Unserialize
 
-> A stateless PHP serialized-data to JSON converter. Serialized objects are rejected and input is limited to 262,144 bytes.
+> A stateless PHP serialized-data to JSON converter. Objects convert to their properties without their class being loaded, and input is limited to 262,144 bytes.
 
-The HTML pages below (/, /privacy, /developers) also serve a Markdown representation: send `Accept: text/markdown` and the page is returned as Markdown instead of HTML.
+The HTML pages below (/, /guides/wordpress-serialized-data, /guides/fix-broken-serialized-string, /privacy, /developers) also serve a Markdown representation: send `Accept: text/markdown` and the page is returned as Markdown instead of HTML.
 
 ## Documentation
 
 - https://unserialize.dev/: Browser converter, PHP serialization format, WordPress workflow, and security guidance
+- https://unserialize.dev/guides/wordpress-serialized-data: Where WordPress stores serialized PHP and how to read and edit it safely
+- https://unserialize.dev/guides/fix-broken-serialized-string: Diagnosing and repairing serialized strings that fail to unserialize
 - https://unserialize.dev/privacy: Privacy and retention contract
 - https://unserialize.dev/developers: HTTP API and MCP integration guide
 - https://unserialize.dev/openapi.json: OpenAPI 3.1 description
