@@ -10,13 +10,16 @@ use App\Enums\InputTrait;
 use App\Enums\UsageEventType;
 use App\Exceptions\ConversionException;
 use App\Livewire\Forms\SerializedForm;
+use App\Models\ErrorReport;
 use App\Services\ConversionRateLimiter;
 use App\Services\ConversionTelemetry;
 use App\Services\DiagnosticPresenter;
 use App\Services\InputTraitDetector;
 use App\Services\UsageEventRecorder;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Laravel\Head\Facades\Head;
@@ -109,6 +112,31 @@ class Serialized extends Component
     public array $hints = [];
 
     /**
+     * Whether the last attempt failed in a way the person may report.
+     *
+     * Locked so a client cannot open the report form for a value that never
+     * failed; {@see self::reportFailure()} still converts the value again.
+     */
+    #[Locked]
+    public bool $canReport = false;
+
+    /**
+     * Whether the person agreed to have the failed value stored.
+     */
+    public bool $reportConsent = false;
+
+    /**
+     * What the person adds about the failure, if anything.
+     */
+    public string $reportNote = '';
+
+    /**
+     * What happened to the last report the person sent.
+     */
+    #[Locked]
+    public ?string $reportStatus = null;
+
+    /**
      * The GitHub profile that identifies the converter's author.
      */
     private const string AUTHOR_GITHUB_URL = 'https://github.com/roelmagdaleno';
@@ -117,6 +145,11 @@ class Serialized extends Component
      * The X profile that identifies the converter's author.
      */
     private const string AUTHOR_X_URL = 'https://x.com/Roel7nxju0';
+
+    /**
+     * How many error reports one client may send per hour.
+     */
+    private const int REPORTS_PER_HOUR = 3;
 
     /**
      * Publish the converter's structured data alongside the head metadata the
@@ -181,6 +214,8 @@ class Serialized extends Component
         $this->diagnostic = null;
         $this->lineEndingsRestored = false;
         $this->hints = [];
+        $this->canReport = false;
+        $this->reportStatus = null;
         $startedAt = hrtime(true);
         $inputBytes = strlen($this->form->serializedData);
         $inputTraits = $detector->detect($this->form->serializedData);
@@ -254,6 +289,7 @@ class Serialized extends Component
                 static fn (InputTrait $trait): ?string => $trait->hint(),
                 $inputTraits,
             )));
+            $this->canReport = true;
 
             /**
              * The inline field error stays: it is what gives the textarea its
@@ -261,6 +297,75 @@ class Serialized extends Component
              */
             $this->addError('form.serializedData', $exception->getMessage());
         }
+    }
+
+    /**
+     * Store the failed value, because the person asked for it to be looked at.
+     *
+     * - Nothing is stored without explicit consent, and only a value that
+     *   still fails when converted again, so a report always shows a failure.
+     * - The row holds the value, why it failed, its traits and the note; no IP
+     *   address, user agent or session.
+     * - The warning is how a new report surfaces in Nightwatch. It names the
+     *   report and its category, never the value.
+     */
+    public function reportFailure(
+        Request $request,
+        ConversionRateLimiter $limiter,
+        InputTraitDetector $detector,
+    ): void {
+        if (! $this->canReport) {
+            return;
+        }
+
+        $retentionDays = (int) config('telemetry.error_report_retention_days');
+
+        $this->validate([
+            'reportConsent' => ['accepted'],
+            'reportNote' => ['nullable', 'string', 'max:500'],
+        ], [
+            'reportConsent.accepted' => "Confirm that the value may be stored for $retentionDays days.",
+        ]);
+
+        $rateLimitKey = 'error-report:'.$limiter->key($request);
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, self::REPORTS_PER_HOUR)) {
+            $this->addError('reportConsent', 'Too many reports. Please try again later.');
+
+            return;
+        }
+
+        $inputTraits = $detector->detect($this->form->serializedData);
+
+        try {
+            $this->form->submit();
+
+            $this->canReport = false;
+            $this->reportStatus = 'This value converts now, so there is nothing to report.';
+
+            return;
+        } catch (ConversionException $exception) {
+            RateLimiter::hit($rateLimitKey, 3600);
+
+            $report = new ErrorReport;
+            $report->reported_at = CarbonImmutable::now('UTC');
+            $report->outcome = ConversionOutcome::fromErrorCode($exception->errorCode)->value;
+            $report->diagnostic = $exception->diagnostic?->code->value;
+            $report->input_traits = $inputTraits === [] ? null : $inputTraits;
+            $report->input = $this->form->serializedData;
+            $report->note = trim($this->reportNote) === '' ? null : trim($this->reportNote);
+            $report->save();
+
+            Log::warning('error_report.received', [
+                'id' => $report->id,
+                'outcome' => $report->outcome,
+                'diagnostic' => $report->diagnostic,
+            ]);
+        }
+
+        $this->canReport = false;
+        $this->reportStatus = "Report sent. It will be deleted after $retentionDays days.";
+        $this->reset('reportConsent', 'reportNote');
     }
 
     /**

@@ -16,7 +16,9 @@ it('explains stateless processing and legacy output retention', function () {
         ->assertSee('never sent to Google Analytics or any other third-party analytics provider')
         ->assertSee('Legacy output links')
         ->assertSee('may remain available')
-        ->assertSee('262,144 bytes');
+        ->assertSee('262,144 bytes')
+        ->assertSee('Nothing is sent unless you tick the consent box')
+        ->assertSee('Reports are deleted automatically after 30 days');
 });
 
 it('states the retention window the application is configured for', function () {

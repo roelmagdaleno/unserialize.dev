@@ -1,6 +1,6 @@
 # Unserialize Online – PHP Unserialize to JSON Converter
 
-> Convert PHP serialized data into clean, readable JSON. Conversions are processed in memory: the submitted value and the JSON result are not stored or logged.
+> Convert PHP serialized data into clean, readable JSON. Conversions are processed in memory: the submitted value and the JSON result are not stored or logged unless you choose to report a failed value in the browser.
 
 - Converter: {{ url('/') }}/
 - Privacy and retention: {{ route('privacy') }}
