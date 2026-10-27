@@ -22,7 +22,7 @@ Route::get('/', Serialized::class)
         NegotiateMarkdownRepresentation::class.':markdown.home',
     ])
     ->withHead(
-        title: ['value' => 'Unserialize Online – PHP Unserialize to JSON Converter', 'exact' => true],
+        title: ['value' => 'Unserialize Online: Convert PHP Serialized Data to JSON', 'exact' => true],
         description: Serialized::META_DESCRIPTION,
         canonical: ['value' => $pageUrl('/'), 'forceHttps' => false],
         og: ['url' => $pageUrl('/'), 'description' => Serialized::SOCIAL_DESCRIPTION],
