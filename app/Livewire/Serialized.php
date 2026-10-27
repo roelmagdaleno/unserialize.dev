@@ -90,6 +90,13 @@ class Serialized extends Component
     public ?array $diagnostic = null;
 
     /**
+     * Whether the last result only converted once the browser's `\n` were read
+     * back as `\r\n`, so the page can say the value was repaired.
+     */
+    #[Locked]
+    public bool $lineEndingsRestored = false;
+
+    /**
      * The GitHub profile that identifies the converter's author.
      */
     private const string AUTHOR_GITHUB_URL = 'https://github.com/roelmagdaleno';
@@ -159,6 +166,7 @@ class Serialized extends Component
         ConversionRateLimiter $limiter,
     ): void {
         $this->diagnostic = null;
+        $this->lineEndingsRestored = false;
         $startedAt = hrtime(true);
         $inputBytes = strlen($this->form->serializedData);
         $rateLimitKey = 'unserialize:'.$limiter->key($request);
@@ -190,14 +198,15 @@ class Serialized extends Component
 
         try {
             $conversion = $this->form->submit();
-            $this->result = $conversion->json;
+            $this->result = $conversion->result->json;
+            $this->lineEndingsRestored = $conversion->lineEndingsRestored;
             $telemetry->record(
                 ConversionInterface::Browser,
                 ConversionOutcome::Success,
                 $inputBytes,
                 $startedAt,
                 null,
-                $context(UsageContext::resultTypeFor($conversion->value)),
+                $context(UsageContext::resultTypeFor($conversion->result->value)),
             );
         } catch (ValidationException $exception) {
             $telemetry->record(
