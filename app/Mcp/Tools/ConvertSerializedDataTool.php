@@ -28,7 +28,7 @@ use Laravel\Mcp\Server\Tools\Annotations\IsReadOnly;
 
 #[Name(ConvertSerializedDataTool::NAME)]
 #[Title('Convert PHP Serialized Data')]
-#[Description('Convert one PHP serialized value to structured JSON. Input is limited to 262144 bytes, objects convert to their properties, and submitted data is not retained. Invalid input returns error.diagnostic with a byte offset, a length, and a suggested correction; the tool never rewrites the input for you.')]
+#[Description('Convert one PHP serialized value to structured JSON. Send the complete serialized string exactly as it is stored, unescaped: no surrounding quotes and no backslash-escaped quotes (send s:3:"foo"; not "s:3:\"foo\";"). Input is limited to 262144 bytes, objects convert to their properties, and submitted data is not retained. Invalid input returns error.diagnostic with a byte offset, a length, and a suggested correction; the tool never rewrites the input for you.')]
 #[IsReadOnly]
 #[IsIdempotent]
 #[IsDestructive(false)]
@@ -149,7 +149,7 @@ class ConvertSerializedDataTool extends Tool
             'serialized' => $schema->string()
                 ->max(Serialized::MAX_INPUT_BYTES)
                 ->description(sprintf(
-                    'A PHP serialized value. Maximum %d bytes. Objects convert to their properties; custom-serialized objects and enums are not supported.',
+                    'The complete PHP serialized value exactly as stored, unescaped. Maximum %d bytes. Objects convert to their properties; custom-serialized objects and enums are not supported.',
                     Serialized::MAX_INPUT_BYTES,
                 ))
                 ->required(),
