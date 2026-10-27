@@ -2,7 +2,7 @@
 
 > How Unserialize processes PHP serialized data, what technical metadata it records, and how long anything is kept.
 
-Last reviewed October 27, 2026.
+Last reviewed September 15, 2026.
 
 New conversions are processed in memory. Your serialized input is transmitted to the Unserialize server, converted, returned to your browser, and not stored in the outputs database.
 
@@ -15,10 +15,6 @@ Separately from conversion content, Unserialize records technical metadata about
 This metadata is stored only in Unserialize's own database. It is never sent to Google Analytics or any other third-party analytics provider, it is never exposed through a public endpoint, and it is not used to build a profile, a fingerprint, or a unique-visitor count. Credentials embedded in a URL are removed and the values of sensitive query keys such as `token`, `api_key`, and `password` are replaced before anything is written.
 
 Usage metadata is deleted automatically after {{ config('telemetry.retention_days') }} days by a scheduled daily purge. The database is not backed up, so {{ config('telemetry.retention_days') }} days is the complete retention period and there is no copy that outlives it. Long-lived conversion counts are kept, but they hold only a date, an interface, an outcome, and a total.
-
-## Error reports you choose to send
-
-When a conversion fails in the browser, you can send the failed value to the developer. Nothing is sent unless you tick the consent box and press **Send report**. A report stores the value exactly as it appears in the field, the error category, its formatting traits and your optional note. It stores no IP address, User-Agent or session. Reports are deleted automatically after {{ config('telemetry.error_report_retention_days') }} days by the same daily purge, and the database is not backed up. The API and MCP tool never create reports.
 
 ## Limits and unsupported data
 

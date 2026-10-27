@@ -3,7 +3,6 @@
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
 use App\Models\ConversionMetric;
-use App\Models\ErrorReport;
 use App\Models\UsageEvent;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Console\Scheduling\Schedule;
@@ -57,14 +56,13 @@ it('deletes nothing more on a second run and never touches conversion aggregates
     $this->assertDatabaseHas('conversion_metrics', ['date' => '2026-08-01', 'count' => 5]);
 });
 
-test('a daily prune limited to usage events and error reports is scheduled', function () {
+test('a daily prune limited to usage events is scheduled', function () {
     $commands = collect(app(Schedule::class)->events())
         ->map(fn (Event $event): string => $event->command ?? '')
         ->filter(fn (string $command): bool => str_contains($command, 'model:prune'));
 
     expect($commands)->toHaveCount(1)
         ->and($commands->sole())->toContain(UsageEvent::class)
-        ->and($commands->sole())->toContain(ErrorReport::class)
         ->and(collect(app(Schedule::class)->events())
             ->first(fn (Event $event): bool => str_contains((string) $event->command, 'model:prune'))
             ->expression)->toBe('0 0 * * *');

@@ -23,18 +23,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Error Report Retention
-    |--------------------------------------------------------------------------
-    |
-    | How many days a failed value a person chose to report may remain before
-    | the daily prune deletes it. The privacy page reads the same value.
-    |
-    */
-
-    'error_report_retention_days' => (int) env('TELEMETRY_ERROR_REPORT_RETENTION_DAYS', 30),
-
-    /*
-    |--------------------------------------------------------------------------
     | Normalization Limits
     |--------------------------------------------------------------------------
     |

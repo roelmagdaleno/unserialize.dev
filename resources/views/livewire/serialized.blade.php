@@ -14,7 +14,7 @@
             <flux:error name="form.serializedData" />
 
             <flux:description>
-                Your input is processed in memory, not stored or logged unless you choose to report a failed value. Max 262,144 bytes. <a class="underline hover:text-zinc-700 dark:hover:text-zinc-200" href="{{ route('privacy') }}">Privacy details</a>.
+                Your input is processed in memory, not stored or logged. Max 262,144 bytes. <a class="underline hover:text-zinc-700 dark:hover:text-zinc-200" href="{{ route('privacy') }}">Privacy details</a>.
             </flux:description>
         </flux:field>
 
@@ -71,36 +71,6 @@
                 </div>
             </div>
         </section>
-    @endif
-
-    @if ($canReport)
-        <details class="mt-4 rounded-lg border border-zinc-200 p-4 text-sm dark:border-zinc-700" @if ($errors->has('reportConsent') || $errors->has('reportNote')) open @endif>
-            <summary class="cursor-pointer font-medium text-zinc-800 dark:text-zinc-100">Think this is our bug? Send this value to the developer</summary>
-
-            <form wire:submit="reportFailure" class="mt-4 space-y-4">
-                <p class="text-zinc-600 dark:text-zinc-300">
-                    The report stores the value exactly as it appears in the field above, the error category and your note. It stores no IP address or browser details, and it is deleted after {{ config('telemetry.error_report_retention_days') }} days. Remove passwords, keys and personal data before sending.
-                </p>
-
-                <flux:field>
-                    <flux:label>Note (optional)</flux:label>
-                    <flux:textarea wire:model="reportNote" rows="2" maxlength="500" placeholder="Where the value came from, or what you expected" />
-                    <flux:error name="reportNote" />
-                </flux:field>
-
-                <flux:field variant="inline">
-                    <flux:checkbox wire:model="reportConsent" />
-                    <flux:label>Store this value for {{ config('telemetry.error_report_retention_days') }} days so the converter can be fixed</flux:label>
-                    <flux:error name="reportConsent" />
-                </flux:field>
-
-                <flux:button type="submit">Send report</flux:button>
-            </form>
-        </details>
-    @endif
-
-    @if ($reportStatus !== null)
-        <p class="mt-4 text-sm text-zinc-600 dark:text-zinc-300" role="status">{{ $reportStatus }}</p>
     @endif
 
     @if ($result !== null)
