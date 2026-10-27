@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
+use App\Enums\InputTrait;
 use App\Enums\SyntaxErrorCode;
 use App\Enums\UsageEventType;
 use App\Models\UsageEvent;
@@ -34,6 +35,8 @@ readonly class UsageEventRecorder
      * carries the exception class and not its message, because a query exception
      * repeats the statement it failed on, and that statement holds the very
      * values this table is careful about.
+     *
+     * @param  list<InputTrait>  $inputTraits
      */
     public function record(
         ConversionInterface $interface,
@@ -43,6 +46,7 @@ readonly class UsageEventRecorder
         ?float $durationMs = null,
         ?string $inputSizeBucket = null,
         ?SyntaxErrorCode $diagnostic = null,
+        array $inputTraits = [],
     ): void {
         try {
             $usageEvent = new UsageEvent;
@@ -54,6 +58,7 @@ readonly class UsageEventRecorder
             $usageEvent->duration_ms = $durationMs;
             $usageEvent->input_size_bucket = $inputSizeBucket;
             $usageEvent->diagnostic = $diagnostic?->value;
+            $usageEvent->input_traits = $inputTraits === [] ? null : $inputTraits;
             $usageEvent->result_type = $context?->resultType;
             $usageEvent->api_version = $context?->apiVersion;
             $usageEvent->http_status = $context?->httpStatus;

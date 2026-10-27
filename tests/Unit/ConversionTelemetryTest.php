@@ -2,6 +2,7 @@
 
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
+use App\Enums\InputTrait;
 use App\Enums\SyntaxErrorCode;
 use App\Models\ConversionMetric;
 use App\Services\ConversionTelemetry;
@@ -193,6 +194,26 @@ test('a failed metrics write is logged without failing the conversion', function
                 'outcome' => 'success',
                 'exception' => QueryException::class,
             ]);
+
+        return true;
+    });
+});
+
+test('conversion telemetry logs input traits by their enum values', function () {
+    Log::spy();
+
+    app(ConversionTelemetry::class)->record(
+        ConversionInterface::Browser,
+        ConversionOutcome::InvalidInput,
+        20,
+        hrtime(true),
+        SyntaxErrorCode::UnknownTypeMarker,
+        null,
+        [InputTrait::WrappedInQuotes, InputTrait::LooksLikeJson],
+    );
+
+    Log::shouldHaveReceived('info')->once()->withArgs(function (string $message, array $context): bool {
+        expect($context['input_traits'])->toBe(['wrapped_in_quotes', 'looks_like_json']);
 
         return true;
     });

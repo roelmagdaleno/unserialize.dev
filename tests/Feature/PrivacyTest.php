@@ -6,6 +6,7 @@ it('explains stateless processing and legacy output retention', function () {
         ->assertSee('not stored in the outputs database')
         ->assertSee('Request bodies are not recorded in application logs or Nightwatch')
         ->assertSee('a diagnostic category')
+        ->assertSee('formatting traits such as whether a browser value was wrapped in quotes')
         ->assertSee('not submitted serialized values, byte offsets, or converted content')
         ->assertSee('Technical usage metadata')
         ->assertSee('the browser or client User-Agent string, the request URL, and the referring URL')

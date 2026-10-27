@@ -6,7 +6,7 @@ Last reviewed September 15, 2026.
 
 New conversions are processed in memory. Your serialized input is transmitted to the Unserialize server, converted, returned to your browser, and not stored in the outputs database.
 
-Request bodies are not recorded in application logs or Nightwatch. Operational telemetry uses only the interface, outcome category, a diagnostic category, latency, and an input-size bucket—not submitted serialized values, byte offsets, or converted content.
+Request bodies are not recorded in application logs or Nightwatch. Operational telemetry uses only the interface, outcome category, a diagnostic category, formatting traits such as whether a browser value was wrapped in quotes, latency, and an input-size bucket—not submitted serialized values, byte offsets, or converted content.
 
 ## Technical usage metadata
 

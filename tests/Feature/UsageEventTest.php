@@ -3,6 +3,7 @@
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
+use App\Enums\InputTrait;
 use App\Enums\SyntaxErrorCode;
 use App\Enums\UsageEventType;
 use App\Livewire\Serialized;
@@ -54,6 +55,7 @@ it('stores only the allowlisted columns', function () {
         'duration_ms',
         'input_size_bucket',
         'diagnostic',
+        'input_traits',
         'result_type',
         'api_version',
         'http_status',
@@ -345,15 +347,18 @@ it('records a tool listing when an mcp client lists the tools', function () {
 });
 
 it('records 429 from the mcp rate limiter', function () {
+    $callTool = fn () => $this->postJson(route('mcp.unserialize'), [
+        'jsonrpc' => '2.0',
+        'id' => 1,
+        'method' => 'tools/call',
+        'params' => ['name' => 'convert_php_serialized_data', 'arguments' => ['serialized' => 'b:1;']],
+    ], ['Accept' => 'application/json, text/event-stream']);
+
     foreach (range(1, 10) as $ignored) {
-        $this->postJson(route('mcp.unserialize'), ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'ping'], [
-            'Accept' => 'application/json, text/event-stream',
-        ]);
+        $callTool();
     }
 
-    $this->postJson(route('mcp.unserialize'), ['jsonrpc' => '2.0', 'id' => 1, 'method' => 'ping'], [
-        'Accept' => 'application/json, text/event-stream',
-    ])->assertStatus(429);
+    $callTool()->assertStatus(429);
 
     $event = UsageEvent::query()->where('outcome', 'rate_limited')->sole();
 
@@ -384,6 +389,39 @@ it('records a browser conversion with its livewire transport metadata', function
         ->and($event->http_status)->toBe(200)
         ->and($event->request_url)->toEndWith('/livewire/update')
         ->and($event->api_version)->toBeNull();
+});
+
+it('records how a failed browser value was pasted, and nothing of the value', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', " 'a:1:{i:0;s:1:\\\"x\\\";}'\n")
+        ->call('unserialize')
+        ->assertHasErrors('form.serializedData');
+
+    $event = UsageEvent::query()->sole();
+
+    expect($event->input_traits->all())->toBe([
+        InputTrait::LeadingWhitespace,
+        InputTrait::TrailingWhitespace,
+        InputTrait::WrappedInQuotes,
+        InputTrait::EscapedQuotes,
+    ])->and($event->getRawOriginal('input_traits'))->not->toContain('a:1:');
+});
+
+it('records that a browser value converted only once its line endings were restored', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'a:1:{s:4:"note";s:5:"a'."\n".'bc";}')
+        ->call('unserialize')
+        ->assertHasNoErrors();
+
+    expect(UsageEvent::query()->sole()->input_traits->all())->toBe([InputTrait::LineEndingsRestored]);
+});
+
+it('stores no input traits for a clean browser value', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'a:1:{s:4:"name";s:6:"Chrome";}')
+        ->call('unserialize');
+
+    expect(UsageEvent::query()->sole()->getRawOriginal('input_traits'))->toBeNull();
 });
 
 it('reads the browser referrer from the request header rather than the payload', function () {

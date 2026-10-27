@@ -222,6 +222,7 @@ class Serialized extends Component
                 $startedAt,
                 null,
                 $context(UsageContext::resultTypeFor($conversion->result->value)),
+                $conversion->lineEndingsRestored ? [...$inputTraits, InputTrait::LineEndingsRestored] : $inputTraits,
             );
         } catch (ValidationException $exception) {
             $telemetry->record(
@@ -242,6 +243,7 @@ class Serialized extends Component
                 $startedAt,
                 $exception->diagnostic?->code,
                 $context(),
+                $inputTraits,
             );
 
             $this->result = null;
