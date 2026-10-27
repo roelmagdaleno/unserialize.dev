@@ -1,7 +1,7 @@
 <x-layouts.app>
     <article class="mt-10 max-w-3xl space-y-5 leading-7 text-zinc-700 dark:text-zinc-300">
         <h1 class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Privacy and retention</h1>
-        <p>Last reviewed September 15, 2026.</p>
+        <p>Last reviewed October 27, 2026.</p>
         <p>New conversions are processed in memory. Your serialized input is transmitted to the Unserialize server, converted, returned to your browser, and not stored in the outputs database.</p>
         <p>Request bodies are not recorded in application logs or Nightwatch. Operational telemetry uses only the interface, outcome category, a diagnostic category, formatting traits such as whether a browser value was wrapped in quotes, latency, and an input-size bucket—not submitted serialized values, byte offsets, or converted content.</p>
         <h2 class="text-xl font-semibold tracking-tight text-zinc-950 dark:text-white">Technical usage metadata</h2>

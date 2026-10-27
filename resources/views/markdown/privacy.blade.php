@@ -2,7 +2,7 @@
 
 > How Unserialize processes PHP serialized data, what technical metadata it records, and how long anything is kept.
 
-Last reviewed September 15, 2026.
+Last reviewed October 27, 2026.
 
 New conversions are processed in memory. Your serialized input is transmitted to the Unserialize server, converted, returned to your browser, and not stored in the outputs database.
 
