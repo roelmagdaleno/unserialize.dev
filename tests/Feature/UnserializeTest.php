@@ -162,6 +162,28 @@ it('converts a value pasted with whitespace around it', function () {
         ->assertSee('"name": "Chrome"');
 });
 
+it('explains a paste mistake beside the diagnostic', function (string $serializedData, string $hint) {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', $serializedData)
+        ->call('unserialize')
+        ->assertHasErrors('form.serializedData')
+        ->assertSee('Check how it was pasted:')
+        ->assertSee($hint);
+})->with([
+    'SQL quotes' => ["'a:1:{i:0;s:1:\"x\";}'", 'Remove the quote at each end.'],
+    'escaped quotes' => ['a:1:{i:0;s:1:\"x\";}', 'Replace every \" with ".'],
+    'JSON' => ['{"name": "Ada"}', 'This looks like JSON, not PHP serialized data.'],
+    'base64' => [base64_encode('a:1:{i:0;s:1:"x";}'), 'This looks like base64.'],
+]);
+
+it('links a string length failure to the repair guide', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'a:10:{s:4:"names";N;}')
+        ->call('unserialize')
+        ->assertDontSee('Check how it was pasted:')
+        ->assertSeeHtml('href="'.route('guides.broken-serialized-string').'"');
+});
+
 it('reports the line and column when the value spans several lines', function () {
     Livewire::test(Serialized::class)
         ->set('form.serializedData', "a:2:{s:7:\"one\ntwo\";N;s:3:\"abcd\";N;}")

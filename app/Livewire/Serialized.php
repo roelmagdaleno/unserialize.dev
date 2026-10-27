@@ -6,12 +6,14 @@ use App\Data\FrequentlyAskedQuestions;
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
+use App\Enums\InputTrait;
 use App\Enums\UsageEventType;
 use App\Exceptions\ConversionException;
 use App\Livewire\Forms\SerializedForm;
 use App\Services\ConversionRateLimiter;
 use App\Services\ConversionTelemetry;
 use App\Services\DiagnosticPresenter;
+use App\Services\InputTraitDetector;
 use App\Services\UsageEventRecorder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -97,6 +99,16 @@ class Serialized extends Component
     public bool $lineEndingsRestored = false;
 
     /**
+     * Fixed advice for the paste mistakes the last failed value shows.
+     *
+     * Locked for the same reason as the diagnostic: the page renders it.
+     *
+     * @var list<string>
+     */
+    #[Locked]
+    public array $hints = [];
+
+    /**
      * The GitHub profile that identifies the converter's author.
      */
     private const string AUTHOR_GITHUB_URL = 'https://github.com/roelmagdaleno';
@@ -164,11 +176,14 @@ class Serialized extends Component
         ConversionTelemetry $telemetry,
         DiagnosticPresenter $presenter,
         ConversionRateLimiter $limiter,
+        InputTraitDetector $detector,
     ): void {
         $this->diagnostic = null;
         $this->lineEndingsRestored = false;
+        $this->hints = [];
         $startedAt = hrtime(true);
         $inputBytes = strlen($this->form->serializedData);
+        $inputTraits = $detector->detect($this->form->serializedData);
         $rateLimitKey = 'unserialize:'.$limiter->key($request);
 
         /**
@@ -233,6 +248,10 @@ class Serialized extends Component
             $this->diagnostic = $exception->diagnostic === null
                 ? null
                 : $presenter->present($exception->diagnostic, $this->form->serializedData);
+            $this->hints = array_values(array_filter(array_map(
+                static fn (InputTrait $trait): ?string => $trait->hint(),
+                $inputTraits,
+            )));
 
             /**
              * The inline field error stays: it is what gives the textarea its
