@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
+use App\Enums\InputTrait;
 use App\Enums\SyntaxErrorCode;
 use App\Enums\UsageEventType;
 use App\Models\ConversionMetric;
@@ -15,8 +16,8 @@ use Throwable;
 /**
  * Records what a conversion did, without recording what it converted.
  *
- * Every field written here has a small closed range -- two enums, a duration
- * and a size bucket -- which is what makes the privacy claim checkable rather
+ * Every field written here has a small closed range -- enums, a duration and
+ * a size bucket -- which is what makes the privacy claim checkable rather
  * than merely stated.
  */
 readonly class ConversionTelemetry
@@ -36,9 +37,13 @@ readonly class ConversionTelemetry
      * - `$context` is a typed allowlist rather than an array; its three
      *   untrusted values are normalized on the way to the event table and never
      *   reach this log.
+     * - `$inputTraits` are {@see InputTrait} cases, yes-or-no facts about how
+     *   the value was pasted, so they carry nothing of the value itself.
      * - The event insert and the aggregate increment are attempted
      *   independently, so a failure in either leaves the other alone and does
      *   not reach the caller.
+     *
+     * @param  list<InputTrait>  $inputTraits
      */
     public function record(
         ConversionInterface $interface,
@@ -47,6 +52,7 @@ readonly class ConversionTelemetry
         int $startedAt,
         ?SyntaxErrorCode $diagnostic = null,
         ?UsageContext $context = null,
+        array $inputTraits = [],
     ): void {
         $durationMs = round((hrtime(true) - $startedAt) / 1_000_000, 3);
         $inputSizeBucket = $this->inputSizeBucket($inputBytes);
@@ -57,6 +63,10 @@ readonly class ConversionTelemetry
             'duration_ms' => $durationMs,
             'input_size_bucket' => $inputSizeBucket,
             'diagnostic' => $diagnostic?->value,
+            'input_traits' => $inputTraits === [] ? null : array_map(
+                static fn (InputTrait $trait): string => $trait->value,
+                $inputTraits,
+            ),
         ], static fn (mixed $value): bool => $value !== null));
 
         $this->recorder->record(
@@ -67,6 +77,7 @@ readonly class ConversionTelemetry
             $durationMs,
             $inputSizeBucket,
             $diagnostic,
+            $inputTraits,
         );
 
         $this->recordAggregate($interface, $outcome);

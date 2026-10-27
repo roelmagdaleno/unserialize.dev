@@ -122,6 +122,68 @@ it('frames the broken part of the value and suggests a correction', function () 
     $this->assertDatabaseCount('outputs', 0);
 });
 
+it('restores the Windows line endings a textarea removes', function () {
+    $sentByTextarea = 'a:1:{s:4:"note";s:5:"a'."\n".'bc";}';
+
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', $sentByTextarea)
+        ->call('unserialize')
+        ->assertHasNoErrors()
+        ->assertSet('lineEndingsRestored', true)
+        ->assertSee('"note": "a\r\nbc"')
+        ->assertSee('Restored the Windows line endings (CRLF) your browser removed from this value.');
+
+    $this->assertDatabaseHas('conversion_metrics', ['interface' => 'browser', 'outcome' => 'success']);
+});
+
+it('keeps the original diagnostic when restoring line endings does not help', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'a:1:{s:4:"note";s:9:"a'."\n".'b";}')
+        ->call('unserialize')
+        ->assertHasErrors('form.serializedData')
+        ->assertSet('lineEndingsRestored', false)
+        ->assertSee('declares 9 bytes but 6 bytes precede the closing quote');
+});
+
+it('does not announce a repair for a value that converts as sent', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'a:1:{s:4:"note";s:3:"a'."\n".'b";}')
+        ->call('unserialize')
+        ->assertSet('lineEndingsRestored', false)
+        ->assertDontSee('Restored the Windows line endings');
+});
+
+it('converts a value pasted with whitespace around it', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', "  \n".'a:1:{s:4:"name";s:6:"Chrome";}'."\n\t ")
+        ->call('unserialize')
+        ->assertHasNoErrors()
+        ->assertSet('form.serializedData', 'a:1:{s:4:"name";s:6:"Chrome";}')
+        ->assertSee('"name": "Chrome"');
+});
+
+it('explains a paste mistake beside the diagnostic', function (string $serializedData, string $hint) {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', $serializedData)
+        ->call('unserialize')
+        ->assertHasErrors('form.serializedData')
+        ->assertSee('Check how it was pasted:')
+        ->assertSee($hint);
+})->with([
+    'SQL quotes' => ["'a:1:{i:0;s:1:\"x\";}'", 'Remove the quote at each end.'],
+    'escaped quotes' => ['a:1:{i:0;s:1:\"x\";}', 'Replace every \" with ".'],
+    'JSON' => ['{"name": "Ada"}', 'This looks like JSON, not PHP serialized data.'],
+    'base64' => [base64_encode('a:1:{i:0;s:1:"x";}'), 'This looks like base64.'],
+]);
+
+it('links a string length failure to the repair guide', function () {
+    Livewire::test(Serialized::class)
+        ->set('form.serializedData', 'a:10:{s:4:"names";N;}')
+        ->call('unserialize')
+        ->assertDontSee('Check how it was pasted:')
+        ->assertSeeHtml('href="'.route('guides.broken-serialized-string').'"');
+});
+
 it('reports the line and column when the value spans several lines', function () {
     Livewire::test(Serialized::class)
         ->set('form.serializedData', "a:2:{s:7:\"one\ntwo\";N;s:3:\"abcd\";N;}")

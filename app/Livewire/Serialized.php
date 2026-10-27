@@ -6,12 +6,14 @@ use App\Data\FrequentlyAskedQuestions;
 use App\Data\UsageContext;
 use App\Enums\ConversionInterface;
 use App\Enums\ConversionOutcome;
+use App\Enums\InputTrait;
 use App\Enums\UsageEventType;
 use App\Exceptions\ConversionException;
 use App\Livewire\Forms\SerializedForm;
 use App\Services\ConversionRateLimiter;
 use App\Services\ConversionTelemetry;
 use App\Services\DiagnosticPresenter;
+use App\Services\InputTraitDetector;
 use App\Services\UsageEventRecorder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -33,7 +35,7 @@ class Serialized extends Component
      * The home page meta description, shared with the route metadata and the
      * structured data so both describe the converter the same way.
      */
-    public const string META_DESCRIPTION = 'Unserialize PHP data online and view it as readable JSON. Broken values show the failing byte and a suggested fix. Nothing is stored.';
+    public const string META_DESCRIPTION = 'Paste PHP serialized data and get readable JSON. If it fails with an error at offset, see the broken byte and how to fix it. Nothing is stored.';
 
     /**
      * The home page Open Graph and Twitter description, shorter than the meta
@@ -88,6 +90,23 @@ class Serialized extends Component
      */
     #[Locked]
     public ?array $diagnostic = null;
+
+    /**
+     * Whether the last result only converted once the browser's `\n` were read
+     * back as `\r\n`, so the page can say the value was repaired.
+     */
+    #[Locked]
+    public bool $lineEndingsRestored = false;
+
+    /**
+     * Fixed advice for the paste mistakes the last failed value shows.
+     *
+     * Locked for the same reason as the diagnostic: the page renders it.
+     *
+     * @var list<string>
+     */
+    #[Locked]
+    public array $hints = [];
 
     /**
      * The GitHub profile that identifies the converter's author.
@@ -157,10 +176,14 @@ class Serialized extends Component
         ConversionTelemetry $telemetry,
         DiagnosticPresenter $presenter,
         ConversionRateLimiter $limiter,
+        InputTraitDetector $detector,
     ): void {
         $this->diagnostic = null;
+        $this->lineEndingsRestored = false;
+        $this->hints = [];
         $startedAt = hrtime(true);
         $inputBytes = strlen($this->form->serializedData);
+        $inputTraits = $detector->detect($this->form->serializedData);
         $rateLimitKey = 'unserialize:'.$limiter->key($request);
 
         /**
@@ -190,14 +213,16 @@ class Serialized extends Component
 
         try {
             $conversion = $this->form->submit();
-            $this->result = $conversion->json;
+            $this->result = $conversion->result->json;
+            $this->lineEndingsRestored = $conversion->lineEndingsRestored;
             $telemetry->record(
                 ConversionInterface::Browser,
                 ConversionOutcome::Success,
                 $inputBytes,
                 $startedAt,
                 null,
-                $context(UsageContext::resultTypeFor($conversion->value)),
+                $context(UsageContext::resultTypeFor($conversion->result->value)),
+                $conversion->lineEndingsRestored ? [...$inputTraits, InputTrait::LineEndingsRestored] : $inputTraits,
             );
         } catch (ValidationException $exception) {
             $telemetry->record(
@@ -218,12 +243,17 @@ class Serialized extends Component
                 $startedAt,
                 $exception->diagnostic?->code,
                 $context(),
+                $inputTraits,
             );
 
             $this->result = null;
             $this->diagnostic = $exception->diagnostic === null
                 ? null
                 : $presenter->present($exception->diagnostic, $this->form->serializedData);
+            $this->hints = array_values(array_filter(array_map(
+                static fn (InputTrait $trait): ?string => $trait->hint(),
+                $inputTraits,
+            )));
 
             /**
              * The inline field error stays: it is what gives the textarea its

@@ -53,6 +53,18 @@
                         </p>
                     @endif
 
+                    @foreach ($hints as $hint)
+                        <p class="mt-3 text-sm text-red-900 dark:text-red-200">
+                            <span class="font-semibold">Check how it was pasted:</span> {{ $hint }}
+                        </p>
+                    @endforeach
+
+                    @if ($diagnostic['code'] === \App\Enums\SyntaxErrorCode::StringLengthMismatch->value)
+                        <p class="mt-3 text-sm text-red-900 dark:text-red-200">
+                            Lengths often break after a search and replace. Read <a class="underline" href="{{ route('guides.broken-serialized-string') }}">how to fix a broken serialized string</a>.
+                        </p>
+                    @endif
+
                     <p class="mt-3 text-xs text-red-900/80 dark:text-red-200/80">
                         Nothing was changed for you. Edit the value above and convert again.
                     </p>
@@ -67,6 +79,9 @@
                 <h2 id="conversion-result" class="text-lg font-semibold">JSON result</h2>
                 <p class="text-sm text-zinc-600 dark:text-zinc-300">This result is not retained by Unserialize.</p>
             </div>
+            @if ($lineEndingsRestored)
+                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300" role="status">Restored the Windows line endings (CRLF) your browser removed from this value.</p>
+            @endif
             <div class="relative">
                 <pre tabindex="0" class="mt-2 overflow-x-auto rounded-lg p-6" data-lang="json" id="clipText">{{ $result }}</pre>
                 <button class="copyBtn hidden md:block" type="button" title="Copy JSON to clipboard" aria-label="Copy JSON to clipboard" data-clipboard-target="#clipText" data-clipboard-event="result-copied">

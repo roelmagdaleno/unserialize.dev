@@ -146,6 +146,35 @@ test('the mcp transport accepts the configured origin', function () {
         ->assertJsonPath('result.serverInfo.name', 'Unserialize Server');
 });
 
+test('mcp requests other than tool calls are never rate limited', function () {
+    foreach (range(1, 15) as $id) {
+        $this->withHeader('Origin', config('app.url'))->postJson('/mcp/unserialize', [
+            'jsonrpc' => '2.0',
+            'id' => $id,
+            'method' => 'tools/list',
+        ])->assertOk();
+    }
+});
+
+test('the mcp transport refuses the eleventh tool call within a minute', function () {
+    $callTool = fn (int $id) => $this->withHeader('Origin', config('app.url'))->postJson('/mcp/unserialize', [
+        'jsonrpc' => '2.0',
+        'id' => $id,
+        'method' => 'tools/call',
+        'params' => [
+            'name' => ConvertSerializedDataTool::NAME,
+            'arguments' => ['serialized' => 'b:1;'],
+        ],
+    ]);
+
+    foreach (range(1, 10) as $id) {
+        $callTool($id)->assertOk();
+    }
+
+    $callTool(11)->assertTooManyRequests()
+        ->assertJsonPath('error.code', 'rate_limited');
+});
+
 test('rate limiting is isolated from the application database', function () {
     expect(config('cache.limiter'))->toBe('array')
         ->and(file_get_contents(base_path('.env.example')))->toContain('CACHE_LIMITER=file');

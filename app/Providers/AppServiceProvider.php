@@ -56,6 +56,11 @@ class AppServiceProvider extends ServiceProvider
      * Both limiters refuse at the same rate, identify the client the same way
      * and record the refusal the same way; only the wording of the refusal
      * differs, because one speaks to a JSON client and the other to an MCP one.
+     *
+     * - The MCP limiter counts only JSON-RPC requests whose `method` is
+     *   `tools/call`. Every other method (`initialize`, notifications,
+     *   `tools/list`) is unlimited, so clients that share one address can
+     *   finish the handshake without spending the conversion allowance.
      */
     private function registerConversionRateLimiters(): void
     {
@@ -75,25 +80,27 @@ class AppServiceProvider extends ServiceProvider
                 $headers,
             )));
 
-        RateLimiter::for('unserialize-mcp', fn (Request $request): Limit => Limit::perMinute($limiter->attemptsPerMinute())
-            ->by($limiter->key($request))
-            ->response(fn (Request $request, array $headers) => $limiter->refuse(
-                ConversionInterface::Mcp,
-                0,
-                /**
-                 * The limit is reached before the request is dispatched, so
-                 * the tool is named from the one tool this endpoint exposes
-                 * rather than from anything in the rejected payload.
-                 */
-                UsageContext::fromRequest(
-                    $request,
-                    httpStatus: 429,
-                    mcpTool: ConvertSerializedDataTool::NAME,
-                    mcpTransport: ConvertSerializedDataTool::TRANSPORT,
-                ),
-                'Too many MCP requests. Try again later.',
-                $headers,
-            )));
+        RateLimiter::for('unserialize-mcp', fn (Request $request): Limit => $request->input('method') !== 'tools/call'
+            ? Limit::none()
+            : Limit::perMinute($limiter->attemptsPerMinute())
+                ->by($limiter->key($request))
+                ->response(fn (Request $request, array $headers) => $limiter->refuse(
+                    ConversionInterface::Mcp,
+                    0,
+                    /**
+                     * The limit is reached before the request is dispatched, so
+                     * the tool is named from the one tool this endpoint exposes
+                     * rather than from anything in the rejected payload.
+                     */
+                    UsageContext::fromRequest(
+                        $request,
+                        httpStatus: 429,
+                        mcpTool: ConvertSerializedDataTool::NAME,
+                        mcpTransport: ConvertSerializedDataTool::TRANSPORT,
+                    ),
+                    'Too many MCP requests. Try again later.',
+                    $headers,
+                )));
     }
 
     /**

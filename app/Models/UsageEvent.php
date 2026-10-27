@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use App\Enums\ConversionInterface;
+use App\Enums\InputTrait;
 use App\Enums\UsageEventType;
 use Carbon\CarbonImmutable;
 use Database\Factories\UsageEventFactory;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
@@ -60,6 +62,7 @@ class UsageEvent extends Model
             'event' => UsageEventType::class,
             'duration_ms' => 'decimal:3',
             'http_status' => 'integer',
+            'input_traits' => AsEnumCollection::of(InputTrait::class),
         ];
     }
 }
