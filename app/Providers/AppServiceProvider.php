@@ -118,6 +118,9 @@ class AppServiceProvider extends ServiceProvider
             ->viewport('width=device-width, initial-scale=1.0')
             ->colorScheme('light dark')
             ->searchableByRobots()
+            ->favicon(asset('favicon.ico'), sizes: '32x32')
+            ->favicon(asset('favicon.svg'), type: ImageType::Svg)
+            ->appleTouchIcon(asset('apple-touch-icon.png'))
             ->og(type: OgType::Website, siteName: 'Unserialize')
             ->ogImage(asset('images/social.png'), alt: 'Unserialize', width: 2400, height: 1200, type: ImageType::Png)
             ->twitter(card: TwitterCard::SummaryWithLargeImage, site: '@roelmagdaleno', creator: '@roelmagdaleno'));

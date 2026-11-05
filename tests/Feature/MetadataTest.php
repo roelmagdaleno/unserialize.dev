@@ -77,3 +77,14 @@ it('publishes every visible question as faq structured data', function () {
         ->toContain('serialize()')
         ->not->toContain('<code>');
 });
+
+it('points every page at favicon files that have content', function (string $rel, string $file, string $attributes) {
+    $this->get(route('privacy'))
+        ->assertSee('<link rel="'.$rel.'" href="'.asset($file).'"'.$attributes.'>', false);
+
+    expect(filesize(public_path($file)))->toBeGreaterThan(0);
+})->with([
+    'ico' => ['icon', 'favicon.ico', ' sizes="32x32"'],
+    'svg' => ['icon', 'favicon.svg', ' type="image/svg+xml"'],
+    'apple touch icon' => ['apple-touch-icon', 'apple-touch-icon.png', ''],
+]);
