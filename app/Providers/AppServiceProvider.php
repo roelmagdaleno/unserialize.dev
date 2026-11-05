@@ -120,7 +120,6 @@ class AppServiceProvider extends ServiceProvider
             ->searchableByRobots()
             ->og(type: OgType::Website, siteName: 'Unserialize')
             ->ogImage(asset('images/social.png'), alt: 'Unserialize', width: 2400, height: 1200, type: ImageType::Png)
-            ->twitter(card: TwitterCard::SummaryWithLargeImage, site: '@roelmagdaleno', creator: '@roelmagdaleno')
-            ->preconnect('https://fonts.bunny.net'));
+            ->twitter(card: TwitterCard::SummaryWithLargeImage, site: '@roelmagdaleno', creator: '@roelmagdaleno'));
     }
 }

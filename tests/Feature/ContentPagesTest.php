@@ -55,6 +55,22 @@ it('highlights the developer guide code blocks with Shiki', function () {
         ->assertSee('data-lang="json"', false);
 });
 
+it('serves its fonts from its own origin on every public page', function (string $routeName) {
+    $this->get(route($routeName))
+        ->assertOk()
+        ->assertDontSee('fonts.bunny.net', false)
+        ->assertDontSee('cdn.jsdelivr.net', false);
+})->with(['home', 'guides.wordpress-serialized-data', 'guides.broken-serialized-string', 'privacy', 'developers']);
+
+it('preloads the monospace font on the converter but not on content pages', function () {
+    $this->get(route('home'))
+        ->assertSee('geist-mono-latin-400-normal', false);
+
+    $this->get(route('privacy'))
+        ->assertOk()
+        ->assertDontSee('geist-mono-latin-400-normal', false);
+});
+
 it('shows the online converter tagline on every public page', function (string $routeName) {
     $this->get(route($routeName))
         ->assertOk()

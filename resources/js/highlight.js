@@ -1,15 +1,3 @@
-import { createHighlighterCore } from 'shiki/core';
-import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
-import catppuccinLatte from 'shiki/themes/catppuccin-latte.mjs';
-import catppuccinMocha from 'shiki/themes/catppuccin-mocha.mjs';
-
-// Both themes are emitted at once as CSS variables. `resources/css/code.css`
-// decides which set applies, so the toggle never re-runs the highlighter.
-const themes = {
-    light: 'catppuccin-latte',
-    dark: 'catppuccin-mocha',
-};
-
 // Grammars are split out so a page only downloads the languages it renders.
 const languageLoaders = {
     bash: () => import('shiki/langs/bash.mjs'),
@@ -17,66 +5,38 @@ const languageLoaders = {
     php: () => import('shiki/langs/php.mjs'),
 };
 
-const loadedLanguages = {};
+const highlightableBlocks = Object.keys(languageLoaders)
+    .map((language) => `pre[data-lang="${language}"]:not([data-highlight="off"])`)
+    .join(',');
 
-let highlighterPromise = null;
+let highlighterModule = null;
 
-function getHighlighter() {
-    highlighterPromise ??= createHighlighterCore({
-        themes: [catppuccinLatte, catppuccinMocha],
-        langs: [],
-        engine: createJavaScriptRegexEngine(),
-    });
+// Shiki stays out of the initial load: its code and grammars are downloaded
+// the first time a block with a known language nears the viewport.
+const blockObserver = new IntersectionObserver(async (entries) => {
+    const visibleBlocks = entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target);
 
-    return highlighterPromise;
-}
-
-async function highlightElement(element) {
-    const language = element.dataset.lang;
-    const loadLanguage = languageLoaders[language];
-
-    if (! loadLanguage) {
+    if (visibleBlocks.length === 0) {
         return;
     }
 
-    const code = element.textContent;
+    visibleBlocks.forEach((block) => blockObserver.unobserve(block));
 
-    if (code.trim() === '') {
-        return;
-    }
+    highlighterModule ??= import('./highlighter.js');
 
-    const highlighter = await getHighlighter();
+    const { highlightElement } = await highlighterModule;
 
-    loadedLanguages[language] ??= loadLanguage().then(
-        (module) => highlighter.loadLanguage(module.default),
-    );
+    visibleBlocks.forEach((block) => highlightElement(block, languageLoaders[block.dataset.lang]));
+}, { rootMargin: '200px' });
 
-    await loadedLanguages[language];
-
-    // Inline markup uses <br> instead of newlines, so the raw source is kept
-    // for the clipboard button to copy verbatim.
-    element.dataset.code = code;
-
-    // The element keeps its own id, classes, and clipboard target so only the
-    // token markup inside it is swapped.
-    element.innerHTML = highlighter.codeToHtml(code, {
-        lang: language,
-        themes,
-        defaultColor: false,
-        structure: 'inline',
-    });
+function observeBlocks() {
+    document.querySelectorAll(highlightableBlocks).forEach((block) => blockObserver.observe(block));
 }
 
-function highlightAll() {
-    // `data-highlight="off"` opts a block out. The diagnostic excerpt renders
-    // its own <mark>, which replacing innerHTML with Shiki tokens would destroy.
-    document.querySelectorAll('pre[data-lang]:not([data-highlight="off"])').forEach(highlightElement);
-}
-
-highlightAll();
+observeBlocks();
 
 // Livewire morphs the highlighted markup back to plain text whenever the
-// component re-renders, so the blocks are highlighted again afterwards.
+// component re-renders, so the blocks are observed again afterwards.
 document.addEventListener('livewire:init', () => {
-    Livewire.hook('morphed', highlightAll);
+    Livewire.hook('morphed', observeBlocks);
 });
