@@ -20,7 +20,7 @@
         "php": "^8.4",
         "laravel/framework": "^13.0",
         "laravel/head": "^0.2.2",
-        "laravel/mcp": "^0.9",
+        "laravel/mcp": "^1.1",
         "laravel/nightwatch": "^1.14",
         "laravel/tinker": "^3.0",
         "roelmagdaleno/serialized": "^1.2"
