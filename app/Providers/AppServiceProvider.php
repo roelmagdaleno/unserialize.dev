@@ -57,6 +57,8 @@ class AppServiceProvider extends ServiceProvider
      * and record the refusal the same way; only the wording of the refusal
      * differs, because one speaks to a JSON client and the other to an MCP one.
      *
+     * - `conversion-reports` caps copy reports, which no conversion gates and
+     *   which each write a usage event. A refused report records nothing.
      * - The MCP limiter counts only JSON-RPC requests whose `method` is
      *   `tools/call`. Every other method (`initialize`, notifications,
      *   `tools/list`) is unlimited, so clients that share one address can
@@ -79,6 +81,9 @@ class AppServiceProvider extends ServiceProvider
                 'Too many conversion attempts. Try again later.',
                 $headers,
             )));
+
+        RateLimiter::for('conversion-reports', fn (Request $request): Limit => Limit::perMinute($limiter->attemptsPerMinute())
+            ->by($limiter->key($request)));
 
         RateLimiter::for('unserialize-mcp', fn (Request $request): Limit => $request->input('method') !== 'tools/call'
             ? Limit::none()

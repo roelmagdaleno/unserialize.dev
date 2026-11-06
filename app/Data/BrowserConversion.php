@@ -3,7 +3,7 @@
 namespace App\Data;
 
 /**
- * A successful browser conversion and whether the form repaired the payload
+ * A successful browser conversion and whether the converter repaired the payload
  * the browser sent before it converted.
  */
 readonly class BrowserConversion

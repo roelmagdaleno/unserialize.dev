@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import '../../vendor/livewire/flux/dist/flux.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -55,6 +54,10 @@
  * Geist Mono everywhere, including pages that do not load `code.css`.
  */
 @layer base {
+    :root.dark {
+        color-scheme: dark;
+    }
+
     code, kbd, samp, pre {
         font-family: var(--font-mono);
     }

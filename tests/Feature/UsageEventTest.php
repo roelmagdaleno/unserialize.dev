@@ -6,7 +6,6 @@ use App\Enums\ConversionOutcome;
 use App\Enums\InputTrait;
 use App\Enums\SyntaxErrorCode;
 use App\Enums\UsageEventType;
-use App\Livewire\Serialized;
 use App\Mcp\Servers\UnserializeServer;
 use App\Mcp\Tools\ConvertSerializedDataTool;
 use App\Models\Output;
@@ -17,7 +16,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Mcp\Events\SessionInitialized;
-use Livewire\Livewire;
 
 it('records one event and one aggregate for a single conversion', function () {
     $this->travelTo('2026-09-15 10:30:00');
@@ -370,15 +368,13 @@ it('records 429 from the mcp rate limiter', function () {
 
 /**
  * A browser conversion is an XHR, so the URL the server observes is the
- * Livewire update endpoint rather than the page the person was looking at. The
+ * conversion endpoint rather than the page the person was looking at. The
  * page itself arrives separately as the referrer; nothing is read back out of
  * the request body to make the URL look like a page view.
  */
-it('records a browser conversion with its livewire transport metadata', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:1:{s:4:"name";s:6:"Chrome";}')
-        ->call('unserialize')
-        ->assertHasNoErrors();
+it('records a browser conversion with its transport metadata', function () {
+    convertInBrowser('a:1:{s:4:"name";s:6:"Chrome";}')
+        ->assertHasNoError();
 
     $event = UsageEvent::query()->sole();
 
@@ -387,15 +383,13 @@ it('records a browser conversion with its livewire transport metadata', function
         ->and($event->outcome)->toBe('success')
         ->and($event->result_type)->toBe('object_array')
         ->and($event->http_status)->toBe(200)
-        ->and($event->request_url)->toEndWith('/livewire/update')
+        ->and($event->request_url)->toEndWith('/convert')
         ->and($event->api_version)->toBeNull();
 });
 
 it('records how a failed browser value was pasted, and nothing of the value', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', " 'a:1:{i:0;s:1:\\\"x\\\";}'\n")
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData');
+    convertInBrowser(" 'a:1:{i:0;s:1:\\\"x\\\";}'\n")
+        ->assertHasError();
 
     $event = UsageEvent::query()->sole();
 
@@ -408,24 +402,20 @@ it('records how a failed browser value was pasted, and nothing of the value', fu
 });
 
 it('records that a browser value converted only once its line endings were restored', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:1:{s:4:"note";s:5:"a'."\n".'bc";}')
-        ->call('unserialize')
-        ->assertHasNoErrors();
+    convertInBrowser('a:1:{s:4:"note";s:5:"a'."\n".'bc";}')
+        ->assertHasNoError();
 
     expect(UsageEvent::query()->sole()->input_traits->all())->toBe([InputTrait::LineEndingsRestored]);
 });
 
 it('stores no input traits for a clean browser value', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:1:{s:4:"name";s:6:"Chrome";}')
-        ->call('unserialize');
+    convertInBrowser('a:1:{s:4:"name";s:6:"Chrome";}');
 
     expect(UsageEvent::query()->sole()->getRawOriginal('input_traits'))->toBeNull();
 });
 
 it('reads the browser referrer from the request header rather than the payload', function () {
-    $request = Request::create('https://unserialize.dev/livewire/update', 'POST', server: [
+    $request = Request::create('https://unserialize.dev/convert', 'POST', server: [
         'HTTP_USER_AGENT' => 'HeadlessChrome/141.0 Playwright/1.49',
         'HTTP_REFERER' => 'https://unserialize.dev/',
     ]);
@@ -434,18 +424,16 @@ it('reads the browser referrer from the request header rather than the payload',
 
     expect($context->userAgent)->toBe('HeadlessChrome/141.0 Playwright/1.49')
         ->and($context->referrerUrl)->toBe('https://unserialize.dev/')
-        ->and($context->requestUrl)->toBe('https://unserialize.dev/livewire/update');
+        ->and($context->requestUrl)->toBe('https://unserialize.dev/convert');
 });
 
 /**
- * Livewire answers a functional failure inside a successful response, so the
+ * The endpoint answers a functional failure inside a successful response, so the
  * two columns must disagree here rather than collapse into one.
  */
 it('records a browser conversion error as its outcome over a successful transport', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'not serialized')
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData');
+    convertInBrowser('not serialized')
+        ->assertHasError();
 
     $event = UsageEvent::query()->sole();
 
@@ -455,11 +443,9 @@ it('records a browser conversion error as its outcome over a successful transpor
 });
 
 it('records a copy success without counting a conversion', function () {
-    $component = Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'i:1;')
-        ->call('unserialize');
+    convertInBrowser('i:1;');
 
-    $component->call('resultCopied');
+    $this->post(route('conversion.copied'))->assertOk();
 
     $event = UsageEvent::query()->where('event', 'result_copied')->sole();
 
@@ -470,18 +456,20 @@ it('records a copy success without counting a conversion', function () {
     $this->assertDatabaseCount('conversion_metrics', 1);
 });
 
-it('records nothing when a copy is reported with no result on the page', function () {
-    Livewire::test(Serialized::class)->call('resultCopied');
+it('stops recording copy reports past the per-minute allowance', function () {
+    foreach (range(1, 10) as $attempt) {
+        $this->post(route('conversion.copied'))->assertOk();
+    }
 
-    $this->assertDatabaseCount('usage_events', 0);
+    $this->post(route('conversion.copied'))->assertTooManyRequests();
+
+    $this->assertDatabaseCount('usage_events', 10);
 });
 
 it('never stores the browser input or result when a copy is reported', function () {
-    $component = Livewire::test(Serialized::class)
-        ->set('form.serializedData', 's:6:"secret";')
-        ->call('unserialize');
+    convertInBrowser('s:6:"secret";');
 
-    $component->call('resultCopied');
+    $this->post(route('conversion.copied'))->assertOk();
 
     foreach (UsageEvent::query()->get() as $event) {
         foreach ($event->getAttributes() as $value) {
@@ -496,9 +484,7 @@ it('never stores the browser input or result when a copy is reported', function 
  * later rather than have silently dropped at collection time.
  */
 it('stores the user agent an automated browser client sends', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'i:1;')
-        ->call('unserialize');
+    convertInBrowser('i:1;');
 
     expect(UsageEvent::query()->sole()->user_agent)->toBe('Symfony');
 });

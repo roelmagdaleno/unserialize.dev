@@ -1,95 +1,39 @@
-<div>
+<x-layouts.app>
 <section class="mt-8">
-    <form wire:submit="unserialize">
-        <flux:field>
-            <flux:label>Serialized Data</flux:label>
+    <form action="{{ route('conversion.convert') }}" method="post" data-converter onsubmit="event.preventDefault()">
+        <div class="min-w-0">
+            <label for="serialized-data" class="mb-3 inline-flex items-center text-sm font-medium text-zinc-800 dark:text-white">Serialized Data</label>
 
-            <flux:textarea
-                wire:model="form.serializedData"
-                rows="auto"
-                class="font-mono text-sm md:text-base"
-                autofocus="autofocus"
-            />
+            <textarea
+                id="serialized-data"
+                name="serializedData"
+                class="block w-full resize-y rounded-lg border border-zinc-200 border-b-zinc-300/80 bg-white p-3 font-mono text-sm text-zinc-700 shadow-xs field-sizing-content placeholder-zinc-400 data-invalid:border-red-500 data-invalid:shadow-none md:text-base dark:border-white/10 dark:bg-white/10 dark:text-zinc-300 dark:placeholder-zinc-400 dark:data-invalid:border-red-500"
+                aria-describedby="serialized-data-description"
+                autofocus
+            >{{ $serializedData }}</textarea>
 
-            <flux:error name="form.serializedData" />
+            <div id="serialized-data-error" role="alert" aria-live="polite" aria-atomic="true" class="mt-3 hidden text-sm font-medium text-red-500 dark:text-red-400">
+                <svg class="inline size-5 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/></svg>
+                <span data-error-message></span>
+            </div>
 
-            <flux:description>
+            <p id="serialized-data-description" class="mt-3 text-sm text-zinc-500 dark:text-white/60">
                 Your input is processed in memory, not stored or logged. Max 262,144 bytes. <a class="underline hover:text-zinc-700 dark:hover:text-zinc-200" href="{{ route('privacy') }}">Privacy details</a>.
-            </flux:description>
-        </flux:field>
+            </p>
+        </div>
 
         <div class="mt-6 flex justify-end">
-            <flux:button type="submit" class="w-full md:w-auto" variant="primary">Unserialize</flux:button>
+            <button type="submit" class="relative inline-flex h-10 items-center justify-center gap-2 rounded-lg text-sm font-medium whitespace-nowrap disabled:pointer-events-none disabled:cursor-default disabled:opacity-50 disabled:shadow-none w-full border border-black/10 bg-zinc-800 ps-4 pe-4 text-white shadow-[inset_0px_1px_--theme(--color-white/.2)] *:transition-opacity hover:bg-zinc-800/90 md:w-auto dark:border-0 dark:bg-white dark:text-zinc-800 dark:hover:bg-white/90 [&[disabled]>[data-loading-indicator]]:opacity-100 [&[disabled]>:not([data-loading-indicator])]:opacity-0">
+                <span class="absolute inset-0 flex items-center justify-center opacity-0" data-loading-indicator>
+                    <svg class="size-4 shrink-0 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                </span>
+                <span>Unserialize</span>
+            </button>
         </div>
     </form>
-    @if ($diagnostic !== null)
-        {{-- The excerpt <pre> stays on one physical line and uses ternaries rather than @if: whitespace inside it is content, and Livewire wraps every Blade conditional in HTML marker comments that would land inside the excerpt text. --}}
-        <section
-            class="mt-6 rounded-lg border border-red-300 bg-red-50 p-4 sm:p-5 dark:border-red-400/40 dark:bg-red-950/40"
-            role="alert"
-            aria-labelledby="diagnostic-heading"
-            wire:key="diagnostic-{{ $diagnostic['code'] }}-{{ $diagnostic['offset'] }}"
-        >
-            <div class="flex items-start gap-3">
-                <svg class="mt-0.5 h-5 w-5 shrink-0 text-red-700 dark:text-red-300" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" /></svg>
 
-                <div class="min-w-0 flex-1">
-                    <h2 id="diagnostic-heading" class="text-base font-semibold text-red-900 dark:text-red-200">
-                        Error: {{ $diagnostic['message'] }}
-                    </h2>
-
-                    <p class="mt-1 text-sm text-red-900/90 dark:text-red-200/90">
-                        Byte {{ number_format($diagnostic['offset']) }}{{ $diagnostic['line'] === null ? '' : ', line '.number_format($diagnostic['line']).', column '.number_format($diagnostic['column']) }}{{ $diagnostic['length'] > 0 ? ', '.number_format($diagnostic['length']).($diagnostic['length'] === 1 ? ' byte' : ' bytes').' marked below' : '' }}.
-                    </p>
-
-                    <figure class="mt-3">
-                        <figcaption class="sr-only">An excerpt of the submitted value around byte {{ $diagnostic['offset'] }}. The invalid part is marked, and bytes that cannot be shown as text appear as backslash-x escapes.</figcaption>
-                        <pre tabindex="0" data-highlight="off" class="diagnostic-excerpt rounded-md p-4"><span class="diagnostic-ellipsis" aria-hidden="true">{{ $diagnostic['excerpt']['truncatedStart'] ? '…' : '' }}</span>{{ $diagnostic['excerpt']['before'] }}<mark class="diagnostic-span{{ $diagnostic['excerpt']['caret'] ? ' diagnostic-span--caret' : '' }}"><span class="sr-only">start of invalid part </span>{{ $diagnostic['excerpt']['span'] }}<span class="sr-only"> end of invalid part</span></mark>{{ $diagnostic['excerpt']['after'] }}<span class="diagnostic-ellipsis" aria-hidden="true">{{ $diagnostic['excerpt']['truncatedEnd'] ? '…' : '' }}</span></pre>
-                    </figure>
-
-                    @if ($diagnostic['suggestion'] !== null)
-                        <p class="mt-3 text-sm text-red-900 dark:text-red-200">
-                            <span class="font-semibold">Suggestion:</span> {{ $diagnostic['suggestion'] }}
-                        </p>
-                    @endif
-
-                    @foreach ($hints as $hint)
-                        <p class="mt-3 text-sm text-red-900 dark:text-red-200">
-                            <span class="font-semibold">Check how it was pasted:</span> {{ $hint }}
-                        </p>
-                    @endforeach
-
-                    @if ($diagnostic['code'] === \App\Enums\SyntaxErrorCode::StringLengthMismatch->value)
-                        <p class="mt-3 text-sm text-red-900 dark:text-red-200">
-                            Lengths often break after a search and replace. Read <a class="underline" href="{{ route('guides.broken-serialized-string') }}">how to fix a broken serialized string</a>.
-                        </p>
-                    @endif
-
-                    <p class="mt-3 text-xs text-red-900/80 dark:text-red-200/80">
-                        Nothing was changed for you. Edit the value above and convert again.
-                    </p>
-                </div>
-            </div>
-        </section>
-    @endif
-
-    @if ($result !== null)
-        <section class="mt-8" aria-labelledby="conversion-result">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <h2 id="conversion-result" class="text-lg font-semibold">JSON result</h2>
-                <p class="text-sm text-zinc-600 dark:text-zinc-300">This result is not retained by Unserialize.</p>
-            </div>
-            @if ($lineEndingsRestored)
-                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300" role="status">Restored the Windows line endings (CRLF) your browser removed from this value.</p>
-            @endif
-            <div class="relative">
-                <pre tabindex="0" class="mt-2 overflow-x-auto rounded-lg p-6" data-lang="json" id="clipText">{{ $result }}</pre>
-                <button class="copyBtn hidden md:block" type="button" title="Copy JSON to clipboard" aria-label="Copy JSON to clipboard" data-clipboard-target="#clipText" data-clipboard-event="result-copied">
-                    <svg class="h-5 w-5 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"></path><path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"></path></svg>
-                </button>
-            </div>
-        </section>
-    @endif
+    <div id="conversion-diagnostic"></div>
+    <div id="conversion-result"></div>
 </section>
 
 <article class="mt-14 max-w-4xl border-t border-zinc-200 pt-10 text-zinc-700 dark:border-zinc-700 dark:text-zinc-300">
@@ -183,7 +127,7 @@ echo json_encode($value, JSON_PRETTY_PRINT);</pre>
             <h2 id="faq-heading" class="text-2xl font-semibold tracking-tight text-zinc-950 dark:text-white">Frequently asked questions</h2>
             <div class="mt-4 divide-y divide-zinc-200 border-y border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
                 @foreach ($questions as $question)
-                    <details class="group py-4" wire:key="faq-{{ $loop->index }}">
+                    <details class="group py-4">
                         <summary class="flex cursor-pointer list-none items-center justify-between gap-4 rounded font-semibold text-zinc-950 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-700 dark:text-white dark:focus-visible:outline-blue-300 [&::-webkit-details-marker]:hidden">
                             {{ $question['question'] }}
                             <svg class="h-5 w-5 shrink-0 text-zinc-500 transition-transform group-open:rotate-180 dark:text-zinc-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" /></svg>
@@ -196,4 +140,4 @@ echo json_encode($value, JSON_PRETTY_PRINT);</pre>
         </section>
     </div>
 </article>
-</div>
+</x-layouts.app>

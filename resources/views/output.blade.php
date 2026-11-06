@@ -1,3 +1,4 @@
+<x-layouts.app>
 <section class="mt-8">
     <div class="flex justify-between items-center">
         <p class="block text-sm/6 font-medium text-gray-900 dark:text-gray-300">
@@ -31,3 +32,4 @@
         </details>
     </div>
 </section>
+</x-layouts.app>

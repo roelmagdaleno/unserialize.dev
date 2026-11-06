@@ -12,8 +12,6 @@
         "laravel-best-practices",
         "testing-best-practices",
         "configure-nightwatch",
-        "fluxui-development",
-        "livewire-development",
         "tailwindcss-development"
     ]
 }

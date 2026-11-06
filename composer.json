@@ -23,8 +23,6 @@
         "laravel/mcp": "^1.1",
         "laravel/nightwatch": "^1.14",
         "laravel/tinker": "^3.0",
-        "livewire/flux": "^2.1",
-        "livewire/livewire": "^3.5",
         "roelmagdaleno/serialized": "^1.2"
     },
     "require-dev": {

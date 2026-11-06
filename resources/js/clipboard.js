@@ -16,11 +16,11 @@ clipboard.on('success', (element) => {
     setTimeout(() => element.trigger.innerHTML = `${clipboardIcon}`, 1500);
 
     // Only the fact that a copy succeeded is reported. The copied text stays in
-    // the browser: a button that opts in names its event, and nothing else about
-    // the copy is sent.
-    const copyEvent = element.trigger.dataset.clipboardEvent;
+    // the browser: a button that opts in names the URL to tell, and the report
+    // has no body.
+    const reportUrl = element.trigger.dataset.clipboardReport;
 
-    if (copyEvent && window.Livewire) {
-        window.Livewire.dispatch(copyEvent);
+    if (reportUrl) {
+        navigator.sendBeacon(reportUrl);
     }
 });

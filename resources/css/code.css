@@ -178,7 +178,7 @@ button[data-clipboard-target]:hover {
 /*
  * The diagnostic excerpt is never syntax highlighted. It carries no `data-lang`
  * and is marked `data-highlight="off"`, so `resources/js/highlight.js` leaves it
- * alone and the server-rendered <mark> survives every Livewire re-render.
+ * alone and the server-rendered <mark> survives every re-render.
  */
 .diagnostic-excerpt {
     border-style: var(--tw-border-style);

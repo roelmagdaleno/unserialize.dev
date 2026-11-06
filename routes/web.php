@@ -1,10 +1,11 @@
 <?php
 
+use App\Http\Controllers\BrowserConversionController;
+use App\Http\Controllers\HomeController;
 use App\Http\Middleware\AddDiscoveryLinkHeaders;
 use App\Http\Middleware\AddLegacyOutputNoIndexHeader;
 use App\Http\Middleware\NegotiateMarkdownRepresentation;
-use App\Livewire\Output;
-use App\Livewire\Serialized;
+use App\Models\Output;
 use Illuminate\Support\Facades\Route;
 use Laravel\Head\Enums\RobotsRule;
 
@@ -15,7 +16,7 @@ use Laravel\Head\Enums\RobotsRule;
  */
 $pageUrl = fn (string $path): string => $path === '/' ? url('/').'/' : url($path);
 
-Route::get('/', Serialized::class)
+Route::get('/', HomeController::class)
     ->name('home')
     ->middleware([
         AddDiscoveryLinkHeaders::class,
@@ -23,10 +24,10 @@ Route::get('/', Serialized::class)
     ])
     ->withHead(
         title: ['value' => 'Unserialize Online: Convert PHP Serialized Data to JSON', 'exact' => true],
-        description: Serialized::META_DESCRIPTION,
+        description: HomeController::META_DESCRIPTION,
         canonical: ['value' => $pageUrl('/'), 'forceHttps' => false],
-        og: ['url' => $pageUrl('/'), 'description' => Serialized::SOCIAL_DESCRIPTION],
-        twitter: ['description' => Serialized::SOCIAL_DESCRIPTION],
+        og: ['url' => $pageUrl('/'), 'description' => HomeController::SOCIAL_DESCRIPTION],
+        twitter: ['description' => HomeController::SOCIAL_DESCRIPTION],
     );
 
 Route::view('/privacy', 'privacy')
@@ -176,8 +177,19 @@ Route::get('/llms.txt', fn () => response(
     ],
 ))->name('llms');
 
+/**
+ * The converter's endpoints hold no state, so they carry no session or CSRF
+ * token: they accept nothing the public API does not already accept.
+ */
+Route::withoutMiddleware('web')->group(function (): void {
+    Route::post('/convert', [BrowserConversionController::class, 'convert'])->name('conversion.convert');
+    Route::post('/convert/copied', [BrowserConversionController::class, 'copied'])
+        ->middleware('throttle:conversion-reports')
+        ->name('conversion.copied');
+});
+
 Route::get('/o', fn () => redirect('/'));
-Route::get('/o/{output}', Output::class)
+Route::get('/o/{output}', fn (Output $output) => view('output', ['output' => $output]))
     ->middleware(AddLegacyOutputNoIndexHeader::class)
     ->name('outputs')
     ->withHead(
