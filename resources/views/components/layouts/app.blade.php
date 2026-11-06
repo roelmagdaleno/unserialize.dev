@@ -5,13 +5,11 @@
 
         @head
 
-        <!-- Fonts -->
-        <link href="https://fonts.bunny.net/css?family=geist-mono:400,500|inter:400,500,600&display=swap" rel="stylesheet" />
-
         <!-- Styles / Scripts -->
         @vite(['resources/css/app.css'])
 
         @if(Route::is('home', 'outputs'))
+            <link rel="preload" href="{{ Vite::asset('resources/fonts/geist-mono-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
             @vite(['resources/css/code.css', 'resources/js/clipboard.js', 'resources/js/highlight.js'])
         @elseif(Route::is('developers', 'guides.*'))
             @vite(['resources/css/code.css', 'resources/js/highlight.js'])

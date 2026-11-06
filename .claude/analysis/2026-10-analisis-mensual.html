@@ -1,0 +1,524 @@
+<title>unserialize.dev · Octubre 2026</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg: 'var(--bg)', surface: 'var(--surface)', line: 'var(--line)',
+          fg: 'var(--fg)', muted: 'var(--muted)', accent: 'var(--accent)',
+          accentsoft: 'var(--accent-soft)', bad: 'var(--bad)', badsoft: 'var(--bad-soft)',
+          warn: 'var(--warn)', warnsoft: 'var(--warn-soft)', good: 'var(--good)', goodsoft: 'var(--good-soft)'
+        },
+        fontFamily: {
+          display: ['"Bricolage Grotesque"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          sans: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace']
+        }
+      }
+    }
+  }
+</script>
+<style>
+  /* Layout: una columna de lectura (max 72rem); resumen arriba, fuentes en medio, recomendaciones filtrables al final. */
+  :root {
+    --bg: #f6f7f4; --surface: #ffffff; --line: #dfe3dc; --fg: #1b211d; --muted: #5d6860;
+    --accent: #2f6b4f; --accent-soft: #e3efe7;
+    --bad: #b3372b; --bad-soft: #f8e4e1; --warn: #9a6400; --warn-soft: #f7ecd6; --good: #2f7a3e; --good-soft: #e1f1e4;
+    --chart-1: #2f6b4f; --chart-2: #c4a35a; --chart-3: #b3372b; --chart-4: #7d8a80;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121614; --surface: #1a201d; --line: #2c3530; --fg: #e6ebe7; --muted: #9aa69e;
+      --accent: #7fc4a0; --accent-soft: #1f3329;
+      --bad: #f08a7e; --bad-soft: #3a1f1c; --warn: #e3b25c; --warn-soft: #362a14; --good: #86cf93; --good-soft: #1c3221;
+      --chart-1: #7fc4a0; --chart-2: #d9bb72; --chart-3: #f08a7e; --chart-4: #8d9a91;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121614; --surface: #1a201d; --line: #2c3530; --fg: #e6ebe7; --muted: #9aa69e;
+    --accent: #7fc4a0; --accent-soft: #1f3329;
+    --bad: #f08a7e; --bad-soft: #3a1f1c; --warn: #e3b25c; --warn-soft: #362a14; --good: #86cf93; --good-soft: #1c3221;
+    --chart-1: #7fc4a0; --chart-2: #d9bb72; --chart-3: #f08a7e; --chart-4: #8d9a91;
+    color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--fg); font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif; font-size: 15px; line-height: 1.55; }
+  .wrap { max-width: 72rem; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 2.5rem 4rem; }
+  h1, h2, h3 { text-wrap: balance; }
+  .num { font-variant-numeric: tabular-nums; }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .tbl { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  .tbl th { text-align: left; font-weight: 600; color: var(--muted); font-size: 0.78rem; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .tbl td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--line); }
+  .tbl td.r, .tbl th.r { text-align: right; }
+  .scroll-x { overflow-x: auto; }
+  .chip { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.72rem; font-weight: 600; padding: 0.12rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+  .chip-bad { background: var(--bad-soft); color: var(--bad); }
+  .chip-warn { background: var(--warn-soft); color: var(--warn); }
+  .chip-good { background: var(--good-soft); color: var(--good); }
+  .chip-neutral { background: var(--accent-soft); color: var(--accent); }
+  .sev { border-left: 3px solid var(--line); padding-left: 0.9rem; }
+  .sev-bad { border-left-color: var(--bad); }
+  .sev-warn { border-left-color: var(--warn); }
+  .filter-btn { border: 1px solid var(--line); padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; font-weight: 500; color: var(--muted); background: var(--surface); cursor: pointer; }
+  .filter-btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .filter-btn:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 0.85em; background: var(--accent-soft); padding: 0.05rem 0.3rem; border-radius: 4px; overflow-wrap: anywhere; }
+  details > summary { cursor: pointer; list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details[open] .caret { transform: rotate(90deg); }
+  .caret { transition: transform .15s; display: inline-block; }
+  @media (prefers-reduced-motion: reduce) { .caret { transition: none; } }
+  .chart-box { position: relative; height: 240px; }
+</style>
+
+<div class="wrap flex flex-col gap-12">
+
+  <!-- Encabezado -->
+  <header class="flex flex-col gap-4">
+    <p class="eyebrow">Análisis mensual · corte 27 oct 2026</p>
+    <h1 class="font-display text-4xl sm:text-5xl font-bold leading-tight">unserialize.dev en octubre</h1>
+    <p class="text-muted max-w-2xl">Más visitas y mejor posición en Google, pero convertimos peor: el éxito en el navegador bajó del 72&nbsp;% al 55&nbsp;%, el MCP no tuvo ninguna conversión exitosa y el 15 de octubre el sitio falló durante horas sin que nos enteráramos.</p>
+    <p class="text-xs text-muted">Fuentes: Cloudflare (GraphQL Analytics), Google Search Console, base de producción (solo lectura) y Laravel Nightwatch (MCP). Octubre cubre del 1 al 27.</p>
+  </header>
+
+  <!-- KPIs -->
+  <section aria-labelledby="kpi-h" class="flex flex-col gap-4">
+    <h2 id="kpi-h" class="sr-only">Resumen</h2>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-1">
+        <span class="eyebrow">Páginas vistas / día</span>
+        <span class="font-display text-3xl font-bold num">150</span>
+        <span class="chip chip-good self-start">+6 % vs sep (141)</span>
+      </div>
+      <div class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-1">
+        <span class="eyebrow">Clics en Google</span>
+        <span class="font-display text-3xl font-bold num">17</span>
+        <span class="chip chip-warn self-start">CTR 1.1 % · pos. 8.8</span>
+      </div>
+      <div class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-1">
+        <span class="eyebrow">Éxito en navegador</span>
+        <span class="font-display text-3xl font-bold num">55 %</span>
+        <span class="chip chip-bad self-start">72 % en septiembre</span>
+      </div>
+      <div class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-1">
+        <span class="eyebrow">Incidente 15 oct</span>
+        <span class="font-display text-3xl font-bold num">2,686</span>
+        <span class="chip chip-bad self-start">errores 525 + 500</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hallazgos -->
+  <section aria-labelledby="find-h" class="flex flex-col gap-5">
+    <div>
+      <p class="eyebrow">Lo más importante</p>
+      <h2 id="find-h" class="font-display text-2xl font-bold">Cinco hallazgos</h2>
+    </div>
+    <ol class="flex flex-col gap-5 max-w-3xl">
+      <li class="sev sev-bad">
+        <h3 class="font-semibold">Un solo día concentró todos los errores graves del mes</h3>
+        <p class="text-muted">El 15 de octubre hubo 2,348 errores 525 (falla SSL entre Cloudflare y el servidor) y 338 errores 500. El resto del mes suma 2 errores 500. No hubo deploy ese día (el último commit es del 7 de octubre) y ninguna alerta avisó. Nightwatch no puede ver los 525 porque esas peticiones nunca llegan a Laravel.</p>
+      </li>
+      <li class="sev sev-bad">
+        <h3 class="font-semibold">Un bug nuestro causa el 60 % de los fallos de conversión</h3>
+        <p class="text-muted">El <code>&lt;textarea&gt;</code> convierte <code>\r\n</code> en <code>\n</code>, así que los datos copiados en Windows pierden un byte por salto de línea y <code>s:N:</code> deja de coincidir. Es la principal razón de que el éxito bajara al 55&nbsp;%.</p>
+      </li>
+      <li class="sev sev-bad">
+        <h3 class="font-semibold">El MCP tiene uso, pero no convierte nada</h3>
+        <p class="text-muted">99 sesiones y 91 listados de tools en octubre, pero solo 9 llamadas a la conversión: 5 con input inválido y 4 bloqueadas por el límite por IP. Cero éxitos.</p>
+      </li>
+      <li class="sev sev-warn">
+        <h3 class="font-semibold">Estamos en la primera página, pero casi nadie hace clic</h3>
+        <p class="text-muted">"unserialize online" tuvo 496 impresiones y 2 clics en octubre. "php unserialize online" tuvo 164 impresiones y ningún clic. El 97&nbsp;% de las impresiones van a la home; las guías casi no aparecen.</p>
+      </li>
+      <li class="sev sev-warn">
+        <h3 class="font-semibold">Los bots generan más del 80 % del tráfico y ensucian el monitoreo</h3>
+        <p class="text-muted">37,616 respuestas 404 y 14,136 403 en octubre. En Nightwatch, los dos issues abiertos vienen de bots que envían peticiones falsas a Livewire; uno de ellos responde con 500.</p>
+      </li>
+    </ol>
+  </section>
+
+  <!-- Cloudflare -->
+  <section aria-labelledby="cf-h" class="flex flex-col gap-5">
+    <div>
+      <p class="eyebrow">Fuente 1</p>
+      <h2 id="cf-h" class="font-display text-2xl font-bold">Cloudflare</h2>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-4">
+      <figure class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-3 min-w-0">
+        <figcaption class="flex flex-col">
+          <span class="font-semibold">Errores 5xx por día, octubre</span>
+          <span class="text-xs text-muted">El 15 de octubre domina el mes. Los 522 (timeout del servidor) son 61 dispersos.</span>
+        </figcaption>
+        <div class="chart-box"><canvas id="ch5xx" aria-label="Errores 5xx por día en octubre"></canvas></div>
+      </figure>
+      <figure class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-3 min-w-0">
+        <figcaption class="flex flex-col">
+          <span class="font-semibold">Personas vs bots por mes</span>
+          <span class="text-xs text-muted">Páginas vistas y únicos diarios suben; amenazas y requests bajan.</span>
+        </figcaption>
+        <div class="chart-box"><canvas id="chTraffic" aria-label="Tráfico mensual de agosto a octubre"></canvas></div>
+      </figure>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-4">
+      <div class="bg-surface border border-line rounded-xl p-4 min-w-0">
+        <p class="font-semibold mb-2">Tráfico</p>
+        <div class="scroll-x">
+          <table class="tbl text-sm">
+            <thead><tr><th></th><th class="r">Ago</th><th class="r">Sep</th><th class="r">Oct</th></tr></thead>
+            <tbody>
+              <tr><td>Requests</td><td class="r">117,647</td><td class="r">99,069</td><td class="r">86,979</td></tr>
+              <tr><td>Páginas vistas</td><td class="r">3,133</td><td class="r">4,230</td><td class="r">4,047</td></tr>
+              <tr><td>Páginas vistas / día</td><td class="r">101</td><td class="r">141</td><td class="r">150</td></tr>
+              <tr><td>Únicos / día</td><td class="r">119</td><td class="r">150</td><td class="r">176</td></tr>
+              <tr><td>Amenazas</td><td class="r">9,603</td><td class="r">1,609</td><td class="r">592</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="bg-surface border border-line rounded-xl p-4 min-w-0">
+        <p class="font-semibold mb-2">Códigos de respuesta</p>
+        <div class="scroll-x">
+          <table class="tbl text-sm">
+            <thead><tr><th>Status</th><th class="r">Ago</th><th class="r">Sep</th><th class="r">Oct</th></tr></thead>
+            <tbody>
+              <tr><td>404</td><td class="r">53,599</td><td class="r">44,732</td><td class="r">37,616</td></tr>
+              <tr><td>301</td><td class="r">37,841</td><td class="r">20,990</td><td class="r">22,006</td></tr>
+              <tr><td>403</td><td class="r">20,350</td><td class="r">23,033</td><td class="r">14,136</td></tr>
+              <tr><td>200</td><td class="r">4,579</td><td class="r">8,064</td><td class="r">8,649</td></tr>
+              <tr><td>405</td><td class="r">1,033</td><td class="r">1,421</td><td class="r">1,063</td></tr>
+              <tr><td>500</td><td class="r">42</td><td class="r">47</td><td class="r"><span class="chip chip-bad">340</span></td></tr>
+              <tr><td>525</td><td class="r">—</td><td class="r">—</td><td class="r"><span class="chip chip-bad">2,348</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <p class="text-sm text-muted max-w-3xl">Del 25 al 27 de octubre los requests cayeron a menos de 800 por día mientras las respuestas 200 se mantuvieron (~250). El tráfico de bots bajó; el humano no. Países principales: NL, US, AU, KR, IN. Navegador "Unknown" suma 726 páginas vistas, casi seguro bots.</p>
+  </section>
+
+  <!-- GSC -->
+  <section aria-labelledby="gsc-h" class="flex flex-col gap-5">
+    <div>
+      <p class="eyebrow">Fuente 2</p>
+      <h2 id="gsc-h" class="font-display text-2xl font-bold">Google Search Console</h2>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-4">
+      <figure class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-3 min-w-0">
+        <figcaption class="flex flex-col">
+          <span class="font-semibold">Impresiones y clics</span>
+          <span class="text-xs text-muted">Las impresiones crecen más rápido que los clics.</span>
+        </figcaption>
+        <div class="chart-box"><canvas id="chGsc" aria-label="Impresiones y clics de agosto a octubre"></canvas></div>
+      </figure>
+      <div class="bg-surface border border-line rounded-xl p-4 min-w-0 flex flex-col gap-3">
+        <p class="font-semibold">Consultas principales (3 meses)</p>
+        <div class="scroll-x">
+          <table class="tbl text-sm">
+            <thead><tr><th>Consulta</th><th class="r">Clics</th><th class="r">Impr.</th><th class="r">CTR</th></tr></thead>
+            <tbody>
+              <tr><td>unserialize online</td><td class="r">2</td><td class="r">811</td><td class="r"><span class="chip chip-bad">0.2 %</span></td></tr>
+              <tr><td>unserialize</td><td class="r">4</td><td class="r">732</td><td class="r"><span class="chip chip-bad">0.5 %</span></td></tr>
+              <tr><td>php unserialize online</td><td class="r">1</td><td class="r">257</td><td class="r"><span class="chip chip-bad">0.4 %</span></td></tr>
+              <tr><td>unserialize php online</td><td class="r">0</td><td class="r">65</td><td class="r">0 %</td></tr>
+              <tr><td>online unserialize</td><td class="r">0</td><td class="r">61</td><td class="r">0 %</td></tr>
+              <tr><td>unserialize json</td><td class="r">1</td><td class="r">33</td><td class="r">3.0 %</td></tr>
+              <tr><td>unserialize to json online</td><td class="r">2</td><td class="r">25</td><td class="r"><span class="chip chip-good">8.0 %</span></td></tr>
+              <tr><td>unserializer</td><td class="r">1</td><td class="r">15</td><td class="r">6.7 %</td></tr>
+              <tr><td>php serialize to json online</td><td class="r">1</td><td class="r">12</td><td class="r">8.3 %</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-muted">Las consultas con "json" convierten 10–40 veces mejor que las genéricas. Páginas: <code>/</code> 27/3,282 · <code>/guides/fix-broken-serialized-string</code> 3/65 · <code>/guides/wordpress-serialized-data</code> 0/59.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Base de datos -->
+  <section aria-labelledby="db-h" class="flex flex-col gap-5">
+    <div>
+      <p class="eyebrow">Fuente 3</p>
+      <h2 id="db-h" class="font-display text-2xl font-bold">Base de datos de producción</h2>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-4">
+      <div class="bg-surface border border-line rounded-xl p-4 min-w-0">
+        <p class="font-semibold mb-2">Conversiones</p>
+        <div class="scroll-x">
+          <table class="tbl text-sm">
+            <thead><tr><th></th><th class="r">Sep</th><th class="r">Oct</th></tr></thead>
+            <tbody>
+              <tr><td>Navegador: intentos</td><td class="r">137</td><td class="r">95</td></tr>
+              <tr><td>Navegador: éxito</td><td class="r">99 (72 %)</td><td class="r"><span class="chip chip-bad">52 (55 %)</span></td></tr>
+              <tr><td>Navegador: invalid_input</td><td class="r">34</td><td class="r">42</td></tr>
+              <tr><td>Navegador: unsupported_object</td><td class="r">3</td><td class="r">0</td></tr>
+              <tr><td>Navegador: input_too_large</td><td class="r">1</td><td class="r">1</td></tr>
+              <tr><td>Resultado copiado</td><td class="r">10</td><td class="r">2</td></tr>
+              <tr><td>MCP: sesiones iniciadas</td><td class="r">47</td><td class="r">99</td></tr>
+              <tr><td>MCP: tools listadas</td><td class="r">—</td><td class="r">91</td></tr>
+              <tr><td>MCP: éxito</td><td class="r">5</td><td class="r"><span class="chip chip-bad">0</span></td></tr>
+              <tr><td>MCP: invalid_input</td><td class="r">1</td><td class="r">5</td></tr>
+              <tr><td>MCP: rate_limited</td><td class="r">0</td><td class="r">4</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <figure class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-3 min-w-0">
+        <figcaption class="flex flex-col">
+          <span class="font-semibold">Por qué falla la conversión (sep + oct, 76 casos)</span>
+          <span class="text-xs text-muted"><code>string_length_mismatch</code>: 43 de 46 vienen de Windows.</span>
+        </figcaption>
+        <div class="chart-box"><canvas id="chDiag" aria-label="Diagnósticos de input inválido"></canvas></div>
+      </figure>
+    </div>
+    <p class="text-sm text-muted max-w-3xl">Los fallos se concentran en pocas personas que reintentan: una en Windows hizo ~20 intentos el 16–17 de septiembre y otra 16 el 10 de octubre. Los 12 <code>unknown_type_marker</code> aparecieron desde el 21 de octubre (espacios, comillas, JSON o base64 pegados).</p>
+  </section>
+
+  <!-- Nightwatch -->
+  <section aria-labelledby="nw-h" class="flex flex-col gap-5">
+    <div>
+      <p class="eyebrow">Fuente 4 · nueva</p>
+      <h2 id="nw-h" class="font-display text-2xl font-bold">Laravel Nightwatch</h2>
+      <p class="text-muted max-w-3xl mt-1">Aplicación "Unserialize", entorno Production (us-east-2). El MCP de Nightwatch solo expone issues; no da métricas de requests ni duración por ruta. No hay issues de rutas, jobs o comandos lentos.</p>
+    </div>
+    <div class="grid lg:grid-cols-2 gap-4">
+      <article class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-2 min-w-0">
+        <div class="flex flex-wrap gap-2 items-center"><span class="chip chip-warn">Abierto</span><span class="font-mono text-xs text-muted">#7</span><span class="text-xs text-muted">8 veces en 7 días</span></div>
+        <h3 class="font-semibold"><code>CannotUpdateLockedPropertyException</code></h3>
+        <p class="text-sm text-muted">Último: 24 oct, propiedad <code>diagnostic</code>, respuesta 419. IP de Google Cloud en Países Bajos con Chrome 131 en Linux: un bot que reenvía snapshots de Livewire alterados. El <code>#[Locked]</code> funciona como debe. Se marcó resuelto el 14 de septiembre y se reabrió solo dos días después.</p>
+      </article>
+      <article class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-2 min-w-0">
+        <div class="flex flex-wrap gap-2 items-center"><span class="chip chip-warn">Abierto</span><span class="font-mono text-xs text-muted">#11</span><span class="text-xs text-muted">14–15 oct</span></div>
+        <h3 class="font-semibold"><code>MethodNotFoundException: _xNonExist</code></h3>
+        <p class="text-sm text-muted">Un escáner de seguridad llamando a métodos inexistentes en <code>/livewire/update</code>. Responde <strong>500</strong>, así que cuenta como error del servidor. Coincide con los 2 errores 500 del 14 de octubre; no alcanza para explicar los 338 del día 15.</p>
+      </article>
+    </div>
+    <details class="bg-surface border border-line rounded-xl p-4">
+      <summary class="font-semibold flex items-center gap-2"><span class="caret" aria-hidden="true">›</span> 9 issues resueltos</summary>
+      <div class="scroll-x mt-3">
+        <table class="tbl text-sm">
+          <thead><tr><th>#</th><th>Excepción</th><th>Último</th></tr></thead>
+          <tbody>
+            <tr><td>6</td><td>Maximum execution time of 30 seconds exceeded</td><td class="num">10 ago 2026</td></tr>
+            <tr><td>8</td><td>Livewire CorruptComponentPayloadException</td><td class="num">25 jul 2026</td></tr>
+            <tr><td>9, 10</td><td>Livewire: handler <code>system</code> y método <code>dispatchBrowserEvent</code> (bots con API de Livewire 2)</td><td class="num">10 jul 2026</td></tr>
+            <tr><td>1–5</td><td>Vite manifest y vistas faltantes durante deploys</td><td class="num">oct 2025</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+    <p class="text-sm text-muted max-w-3xl"><strong class="text-fg">Lo que Nightwatch no ve:</strong> el incidente del 15 de octubre. Los 525 ocurren antes de PHP y no hay ninguna excepción registrada ese día que explique 338 errores 500, así que probablemente vinieron de Nginx o PHP-FPM durante la misma falla. Es una hipótesis: los logs del servidor de ese día la confirmarían.</p>
+  </section>
+
+  <!-- Recomendaciones -->
+  <section aria-labelledby="rec-h" class="flex flex-col gap-5">
+    <div>
+      <p class="eyebrow">Qué hacer</p>
+      <h2 id="rec-h" class="font-display text-2xl font-bold">Recomendaciones</h2>
+      <p class="text-muted max-w-3xl mt-1">Ordenadas por impacto. Filtra por área o por tipo.</p>
+    </div>
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar por área">
+      <button type="button" class="filter-btn" data-area="all" aria-pressed="true" id="f-all">Todo</button>
+      <button type="button" class="filter-btn" data-area="seo" aria-pressed="false" id="f-seo">SEO</button>
+      <button type="button" class="filter-btn" data-area="tech" aria-pressed="false" id="f-tech">Tecnología</button>
+    </div>
+    <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar por tipo">
+      <button type="button" class="filter-btn" data-kind="all" aria-pressed="true" id="k-all">Todos los tipos</button>
+      <button type="button" class="filter-btn" data-kind="mal" aria-pressed="false" id="k-mal">Qué hacemos mal</button>
+      <button type="button" class="filter-btn" data-kind="cambiar" aria-pressed="false" id="k-cambiar">Qué cambiar</button>
+      <button type="button" class="filter-btn" data-kind="mejorar" aria-pressed="false" id="k-mejorar">Qué mejorar</button>
+    </div>
+    <p id="rec-count" class="text-sm text-muted" aria-live="polite"></p>
+    <div id="rec-list" class="flex flex-col gap-3"></div>
+  </section>
+
+  <!-- Límites -->
+  <section aria-labelledby="lim-h" class="flex flex-col gap-3 max-w-3xl">
+    <h2 id="lim-h" class="font-display text-xl font-bold">Límites de este análisis</h2>
+    <ul class="list-disc pl-5 text-sm text-muted flex flex-col gap-1">
+      <li>El rate limit de la API de Cloudflare impidió bajar el detalle por hora del 15 de octubre; la hora exacta del incidente sigue pendiente.</li>
+      <li>El MCP de Nightwatch no expone métricas de requests ni tiempos por ruta; para eso hay que revisar el dashboard.</li>
+      <li>Los volúmenes son pequeños (95 intentos de conversión en octubre): un solo usuario que reintenta mueve los porcentajes varios puntos.</li>
+      <li>Las causas del 525 y la hipótesis de <code>Claude-User</code> con IPs compartidas no están confirmadas.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+  const recommendations = [
+    // Tecnología
+    { area: 'tech', kind: 'mal', priority: 'Alta', effort: 'Bajo',
+      title: 'El textarea rompe los datos copiados desde Windows',
+      body: 'Es el 60 % de los fallos (46 de 76) y la causa principal de que el éxito bajara al 55 %. Si falla con <code>string_length_mismatch</code> y el input tiene <code>\\n</code>, reintentar con <code>\\r\\n</code> y avisar al usuario cuando funcione. Agregar un test con el caso reproducido.' },
+    { area: 'tech', kind: 'mal', priority: 'Alta', effort: 'Medio',
+      title: 'Nos enteramos del incidente del 15 de octubre 12 días después',
+      body: 'Ningún sistema avisó de 2,348 errores 525. Configurar un monitor externo de uptime contra <code>https://unserialize.dev/up</code> y las notificaciones de Cloudflare para errores de origen. Revisar en Forge los logs de Nginx y la renovación del certificado de ese día.' },
+    { area: 'tech', kind: 'cambiar', priority: 'Alta', effort: 'Bajo',
+      title: 'Hacer el SSL del origen menos frágil',
+      body: 'Un 525 significa que Cloudflare no pudo completar el handshake TLS con el servidor. Confirmar que el modo SSL es Full (strict) y considerar un certificado de Cloudflare Origin CA (válido hasta 15 años) para no depender de renovaciones de Let\'s Encrypt. Hipótesis por confirmar con los logs.' },
+    { area: 'tech', kind: 'mal', priority: 'Alta', effort: 'Medio',
+      title: 'El MCP no convierte: 99 sesiones, 0 éxitos',
+      body: 'Los agentes se conectan y listan la tool, pero casi no la llaman y cuando lo hacen fallan. Revisar la descripción de la tool para que el agente sepa qué enviar (5 <code>invalid_input</code>), y cambiar la clave del límite en <code>ConversionRateLimiter::key()</code> para que no dependa solo de la IP: <code>Claude-User</code> probablemente comparte IPs.' },
+    { area: 'tech', kind: 'cambiar', priority: 'Media', effort: 'Bajo',
+      title: 'Responder 4xx a los bots que alteran Livewire',
+      body: 'Hoy <code>MethodNotFoundException</code> responde 500 y <code>CannotUpdateLockedPropertyException</code> abre issues que se reabren solos. En <code>bootstrap/app.php</code>, dentro de <code>withExceptions</code>, renderizarlos como 400 y excluirlos del reporte. Así los 5xx de Cloudflare y los issues de Nightwatch vuelven a significar algo.' },
+    { area: 'tech', kind: 'cambiar', priority: 'Media', effort: 'Bajo',
+      title: 'Bloquear el ruido de bots en Cloudflare, antes del servidor',
+      body: 'Con 37,616 respuestas 404 en un mes, el servidor atiende escaneos de <code>/wp-*</code>, <code>.env</code>, <code>.git</code> o <code>xmlrpc.php</code>. El plan Free permite reglas WAF personalizadas: bloquear esas rutas en el edge. Revisar también de dónde vienen los 22,006 redirects 301 y activar "Always Use HTTPS" si son de http a https.' },
+    { area: 'tech', kind: 'mejorar', priority: 'Media', effort: 'Bajo',
+      title: 'Limpiar el input antes de convertir',
+      body: 'Quitar espacios y saltos de línea exteriores elimina parte de los <code>unknown_type_marker</code> (12 desde el 21 de octubre). Para comillas alrededor, <code>\\"</code>, JSON y base64, mostrar un mensaje específico en vez del error genérico.' },
+    { area: 'tech', kind: 'mejorar', priority: 'Baja', effort: 'Medio',
+      title: 'Telemetría de errores sin guardar contenido',
+      body: 'Registrar banderas como "empieza con espacio", "tiene <code>\\"</code>" o "recuperado con CRLF". Permite medir si los cambios anteriores funcionan sin almacenar el input del usuario.' },
+    { area: 'tech', kind: 'mejorar', priority: 'Baja', effort: 'Bajo',
+      title: 'Aprovechar mejor Nightwatch',
+      body: 'Confirmar en el dashboard los umbrales de rutas lentas y la retención de requests, y suscribirse a alertas de nuevas excepciones. Hoy solo hay issues de excepciones y casi todos son de bots.' },
+
+    // SEO
+    { area: 'seo', kind: 'mal', priority: 'Alta', effort: 'Bajo',
+      title: 'El resultado en Google no convence: CTR de 0.2 % en la consulta principal',
+      body: '"unserialize online" tuvo 811 impresiones y 2 clics en 3 meses. En posición 8–9 un CTR de 0.2 % indica que el título y la descripción no se distinguen de los competidores. Revisar en Google qué título muestra realmente (puede estar reescrito).' },
+    { area: 'seo', kind: 'cambiar', priority: 'Alta', effort: 'Bajo',
+      title: 'Reescribir título y meta descripción de la home hacia "JSON" y "arreglar errores"',
+      body: 'Las consultas con "json" tienen 3–8 % de CTR contra 0.2–0.5 % de las genéricas. Probar un título como <code>Unserialize Online: PHP Serialized Data to JSON, Free</code> y una descripción que mencione el diagnóstico de "error at offset", que es lo único que los competidores no ofrecen. Medir 4 semanas antes de volver a cambiar.' },
+    { area: 'seo', kind: 'mal', priority: 'Media', effort: 'Medio',
+      title: 'Las guías no reciben tráfico',
+      body: 'El 97 % de las impresiones son de la home. Las dos guías suman 124 impresiones y 3 clics. No reciben enlaces internos visibles en el flujo principal del convertidor.' },
+    { area: 'seo', kind: 'cambiar', priority: 'Media', effort: 'Bajo',
+      title: 'Enlazar las guías desde el error que resuelven',
+      body: 'Cuando la conversión falla con <code>string_length_mismatch</code>, mostrar un enlace a <code>/guides/fix-broken-serialized-string</code>. Ayuda al usuario y le da a la guía un enlace interno con contexto. Lo mismo para datos que parecen de WordPress.' },
+    { area: 'seo', kind: 'mejorar', priority: 'Media', effort: 'Medio',
+      title: 'Crear contenido para consultas con intención clara',
+      body: 'Hipótesis a validar en Search Console: guías sobre datos serializados en Laravel (cache, sesiones, colas), WooCommerce y la diferencia entre <code>serialize()</code> y <code>json_encode()</code>. Publicar una a la vez y medir impresiones antes de la siguiente.' },
+    { area: 'seo', kind: 'mejorar', priority: 'Baja', effort: 'Bajo',
+      title: 'No esperar estrellas ni FAQ en los resultados',
+      body: 'Google solo muestra resultados enriquecidos de FAQ para sitios gubernamentales y de salud. El schema FAQ está bien para la estructura, pero no va a subir el CTR. El esfuerzo debe ir al título y la descripción.' },
+    { area: 'seo', kind: 'mejorar', priority: 'Baja', effort: 'Medio',
+      title: 'Conseguir menciones donde busca el público',
+      body: 'Con 30 clics en 3 meses el sitio tiene poca autoridad. Publicar el proyecto en directorios de herramientas para desarrolladores y en comunidades de Laravel y WordPress, y enlazar el sitio desde el README del repositorio.' },
+    { area: 'seo', kind: 'mal', priority: 'Media', effort: 'Bajo',
+      title: 'Las fallas del sitio afectan el rastreo',
+      body: 'Si Googlebot encontró los 525 del 15 de octubre, pudo reducir temporalmente el rastreo. Revisar en Search Console el informe de estadísticas de rastreo de ese día. Es otra razón para tener alertas de uptime.' },
+  ];
+
+  const kindLabel = { mal: 'Qué hacemos mal', cambiar: 'Qué cambiar', mejorar: 'Qué mejorar' };
+  const kindChip = { mal: 'chip-bad', cambiar: 'chip-warn', mejorar: 'chip-good' };
+  const priorityOrder = { Alta: 0, Media: 1, Baja: 2 };
+  const state = { area: 'all', kind: 'all' };
+
+  function renderRecommendations() {
+    const list = document.getElementById('rec-list');
+    const shown = recommendations
+      .filter(r => (state.area === 'all' || r.area === state.area) && (state.kind === 'all' || r.kind === state.kind))
+      .sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    list.innerHTML = shown.map(r => `
+      <article class="bg-surface border border-line rounded-xl p-4 flex flex-col gap-2 sev ${r.priority === 'Alta' ? 'sev-bad' : r.priority === 'Media' ? 'sev-warn' : ''}">
+        <div class="flex flex-wrap gap-2 items-center">
+          <span class="chip ${kindChip[r.kind]}">${kindLabel[r.kind]}</span>
+          <span class="chip chip-neutral">${r.area === 'seo' ? 'SEO' : 'Tecnología'}</span>
+          <span class="text-xs text-muted">Prioridad ${r.priority.toLowerCase()} · esfuerzo ${r.effort.toLowerCase()}</span>
+        </div>
+        <h3 class="font-semibold">${r.title}</h3>
+        <p class="text-sm text-muted max-w-3xl">${r.body}</p>
+      </article>`).join('');
+    document.getElementById('rec-count').textContent = `${shown.length} de ${recommendations.length} recomendaciones`;
+  }
+
+  document.querySelectorAll('[data-area]').forEach(btn => btn.addEventListener('click', () => {
+    state.area = btn.dataset.area;
+    document.querySelectorAll('[data-area]').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+    renderRecommendations();
+  }));
+  document.querySelectorAll('[data-kind]').forEach(btn => btn.addEventListener('click', () => {
+    state.kind = btn.dataset.kind;
+    document.querySelectorAll('[data-kind]').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+    renderRecommendations();
+  }));
+  renderRecommendations();
+
+  // Charts
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const charts = [];
+  const days = Array.from({ length: 27 }, (_, i) => String(i + 1));
+  const e500 = days.map((_, i) => i === 13 ? 2 : i === 14 ? 338 : 0);
+  const e525 = days.map((_, i) => i === 14 ? 2348 : 0);
+  const e522 = [0,3,1,1,2,0,1,3,2,6,1,4,3,10,3,0,2,0,0,1,2,1,7,1,2,1,4];
+
+  function baseOptions(extra = {}) {
+    return {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: css('--muted'), boxWidth: 10, font: { family: 'Instrument Sans' } } }, tooltip: { mode: 'index', intersect: false } },
+      scales: {
+        x: { ticks: { color: css('--muted') }, grid: { display: false }, border: { color: css('--line') } },
+        y: { ticks: { color: css('--muted') }, grid: { color: css('--line') }, border: { display: false }, beginAtZero: true },
+      },
+      ...extra,
+    };
+  }
+
+  function buildCharts() {
+    charts.forEach(c => c.destroy());
+    charts.length = 0;
+    if (typeof Chart === 'undefined') { return; }
+    Chart.defaults.font.family = 'Instrument Sans';
+
+    charts.push(new Chart(document.getElementById('ch5xx'), {
+      type: 'bar',
+      data: { labels: days, datasets: [
+        { label: '525 SSL', data: e525, backgroundColor: css('--chart-3'), stack: 's' },
+        { label: '500', data: e500, backgroundColor: css('--chart-2'), stack: 's' },
+        { label: '522 timeout', data: e522, backgroundColor: css('--chart-4'), stack: 's' },
+      ] },
+      options: baseOptions({ scales: { ...baseOptions().scales, x: { ...baseOptions().scales.x, stacked: true, title: { display: true, text: 'día de octubre', color: css('--muted') } }, y: { ...baseOptions().scales.y, stacked: true } } }),
+    }));
+
+    charts.push(new Chart(document.getElementById('chTraffic'), {
+      type: 'bar',
+      data: { labels: ['Ago', 'Sep', 'Oct'], datasets: [
+        { type: 'line', label: 'Únicos / día', data: [119, 150, 176], borderColor: css('--chart-1'), backgroundColor: css('--chart-1'), yAxisID: 'y', tension: 0.3, pointRadius: [3, 3, 5] },
+        { type: 'line', label: 'Páginas vistas / día', data: [101, 141, 150], borderColor: css('--chart-2'), backgroundColor: css('--chart-2'), yAxisID: 'y', tension: 0.3, pointRadius: [3, 3, 5] },
+        { label: 'Amenazas (mes)', data: [9603, 1609, 592], backgroundColor: css('--chart-4'), yAxisID: 'y1' },
+      ] },
+      options: baseOptions({ scales: {
+        x: baseOptions().scales.x,
+        y: { ...baseOptions().scales.y, position: 'left', title: { display: true, text: 'por día', color: css('--muted') } },
+        y1: { ...baseOptions().scales.y, position: 'right', grid: { display: false }, title: { display: true, text: 'amenazas', color: css('--muted') } },
+      } }),
+    }));
+
+    charts.push(new Chart(document.getElementById('chGsc'), {
+      type: 'bar',
+      data: { labels: ['Ago', 'Sep', 'Oct'], datasets: [
+        { label: 'Impresiones', data: [662, 1170, 1500], backgroundColor: css('--chart-4'), yAxisID: 'y' },
+        { type: 'line', label: 'Clics', data: [2, 11, 17], borderColor: css('--chart-1'), backgroundColor: css('--chart-1'), yAxisID: 'y1', tension: 0.3, pointRadius: [3, 3, 5] },
+      ] },
+      options: baseOptions({ scales: {
+        x: baseOptions().scales.x,
+        y: { ...baseOptions().scales.y, title: { display: true, text: 'impresiones', color: css('--muted') } },
+        y1: { ...baseOptions().scales.y, position: 'right', grid: { display: false }, title: { display: true, text: 'clics', color: css('--muted') } },
+      } }),
+    }));
+
+    charts.push(new Chart(document.getElementById('chDiag'), {
+      type: 'bar',
+      data: { labels: ['string_length_mismatch', 'unknown_type_marker', 'missing_delimiter', 'malformed_number', 'invalid_array_key', 'trailing_data', 'unexpected_end'],
+        datasets: [{ label: 'Casos', data: [46, 12, 10, 3, 2, 2, 1], backgroundColor: [css('--chart-3'), css('--chart-2'), css('--chart-2'), css('--chart-4'), css('--chart-4'), css('--chart-4'), css('--chart-4')] }] },
+      options: baseOptions({ indexAxis: 'y', plugins: { legend: { display: false } }, scales: {
+        x: { ...baseOptions().scales.y, beginAtZero: true },
+        y: { ticks: { color: css('--muted'), font: { family: 'JetBrains Mono', size: 11 } }, grid: { display: false }, border: { color: css('--line') } },
+      } }),
+    }));
+  }
+
+  buildCharts();
+  try {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', buildCharts);
+    new MutationObserver(buildCharts).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  } catch (e) {}
+</script>
