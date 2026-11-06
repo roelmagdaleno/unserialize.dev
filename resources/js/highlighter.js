@@ -1,28 +1,6 @@
-import { createHighlighterCore } from 'shiki/core';
-import { createJavaScriptRegexEngine } from 'shiki/engine/javascript';
-import catppuccinLatte from 'shiki/themes/catppuccin-latte.mjs';
-import catppuccinMocha from 'shiki/themes/catppuccin-mocha.mjs';
+import hljs from 'highlight.js/lib/core';
 
-// Both themes are emitted at once as CSS variables. `resources/css/code.css`
-// decides which set applies, so the toggle never re-runs the highlighter.
-const themes = {
-    light: 'catppuccin-latte',
-    dark: 'catppuccin-mocha',
-};
-
-const loadedLanguages = {};
-
-let highlighterPromise = null;
-
-function getHighlighter() {
-    highlighterPromise ??= createHighlighterCore({
-        themes: [catppuccinLatte, catppuccinMocha],
-        langs: [],
-        engine: createJavaScriptRegexEngine(),
-    });
-
-    return highlighterPromise;
-}
+const registeredLanguages = {};
 
 export async function highlightElement(element, loadLanguage) {
     const language = element.dataset.lang;
@@ -32,24 +10,13 @@ export async function highlightElement(element, loadLanguage) {
         return;
     }
 
-    const highlighter = await getHighlighter();
-
-    loadedLanguages[language] ??= loadLanguage().then(
-        (module) => highlighter.loadLanguage(module.default),
+    registeredLanguages[language] ??= loadLanguage().then(
+        (module) => hljs.registerLanguage(language, module.default),
     );
 
-    await loadedLanguages[language];
+    await registeredLanguages[language];
 
-    // Inline markup uses <br> instead of newlines, so the raw source is kept
-    // for the clipboard button to copy verbatim.
-    element.dataset.code = code;
-
-    // The element keeps its own id, classes, and clipboard target so only the
-    // token markup inside it is swapped.
-    element.innerHTML = highlighter.codeToHtml(code, {
-        lang: language,
-        themes,
-        defaultColor: false,
-        structure: 'inline',
-    });
+    // The input is untrusted: `ignoreIllegals` keeps a malformed value
+    // highlighted instead of dropping the whole block to plain text.
+    element.innerHTML = hljs.highlight(code, { language, ignoreIllegals: true }).value;
 }

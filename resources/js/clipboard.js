@@ -6,10 +6,7 @@ const clipboardCopiedIcon = `<svg fill="currentColor" class="fill-current h-5 w-
 
 let clipboard = new ClipboardJS('button[data-clipboard-target]', {
     text: (trigger) => {
-        const target = document.querySelector(trigger.dataset.clipboardTarget);
-
-        // Highlighted blocks keep their unformatted source in `data-code`.
-        return target.dataset.code ?? target.textContent;
+        return document.querySelector(trigger.dataset.clipboardTarget).textContent;
     },
 });
 

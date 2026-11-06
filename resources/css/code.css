@@ -4,6 +4,16 @@
     --code-border: #ccd0da;
     --code-text: #4c4f69;
 
+    --token-blue: #1e66f5;
+    --token-green: #40a02b;
+    --token-maroon: #e64553;
+    --token-mauve: #8839ef;
+    --token-overlay: #7c7f93;
+    --token-peach: #fe640b;
+    --token-pink: #ea76cb;
+    --token-red: #d20f39;
+    --token-yellow: #df8e1d;
+
     /* Inline code chips: softer than the code block palette. */
     --inline-code-bg: #f1f2f4;
     --inline-code-border: #e3e5e9;
@@ -21,6 +31,16 @@ html.dark {
     --code-bg: #1e1e2e;
     --code-border: #313244;
     --code-text: #cdd6f4;
+
+    --token-blue: #89b4fa;
+    --token-green: #a6e3a1;
+    --token-maroon: #eba0ac;
+    --token-mauve: #cba6f7;
+    --token-overlay: #9399b2;
+    --token-peach: #fab387;
+    --token-pink: #f5c2e7;
+    --token-red: #f38ba8;
+    --token-yellow: #f9e2af;
 
     --inline-code-bg: #262638;
     --inline-code-border: #313244;
@@ -61,21 +81,85 @@ pre {
 }
 
 /*
- * Shiki emits both themes at once as CSS variables on every token, so the
- * colour scheme switches without re-running the highlighter.
+ * Tokens are classes, so the colour scheme switches through the variables above
+ * without re-running the highlighter. A scope can mean different things per
+ * language, which is why JSON and Bash override some of them.
  */
-pre[data-lang] span {
-    color: var(--shiki-light);
-    font-style: var(--shiki-light-font-style);
-    font-weight: var(--shiki-light-font-weight);
-    text-decoration: var(--shiki-light-text-decoration);
+pre[data-lang] .hljs-keyword,
+pre[data-lang] .hljs-built_in,
+pre[data-lang] .hljs-literal,
+pre[data-lang] .hljs-doctag {
+    color: var(--token-mauve);
 }
 
-html.dark pre[data-lang] span {
-    color: var(--shiki-dark);
-    font-style: var(--shiki-dark-font-style);
-    font-weight: var(--shiki-dark-font-weight);
-    text-decoration: var(--shiki-dark-text-decoration);
+pre[data-lang] .hljs-string {
+    color: var(--token-green);
+}
+
+pre[data-lang] .hljs-number {
+    color: var(--token-peach);
+}
+
+pre[data-lang] .hljs-comment {
+    color: var(--token-overlay);
+    font-style: italic;
+}
+
+pre[data-lang] .hljs-comment .hljs-doctag {
+    font-style: normal;
+}
+
+pre[data-lang] .hljs-title {
+    color: var(--token-yellow);
+    font-style: italic;
+}
+
+pre[data-lang] .hljs-title.function_,
+pre[data-lang] .hljs-function > .hljs-title {
+    color: var(--token-blue);
+    font-style: italic;
+}
+
+pre[data-lang] .hljs-variable,
+pre[data-lang] .hljs-subst,
+pre[data-lang] .hljs-meta {
+    color: var(--code-text);
+}
+
+pre[data-lang] .hljs-variable.language_ {
+    color: var(--token-red);
+}
+
+pre[data-lang] .hljs-params .hljs-variable {
+    color: var(--token-maroon);
+    font-style: italic;
+}
+
+pre[data-lang] .hljs-attr {
+    color: var(--token-yellow);
+}
+
+pre[data-lang="json"] .hljs-attr {
+    color: var(--token-blue);
+}
+
+pre[data-lang="json"] .hljs-literal,
+pre[data-lang="json"] .hljs-keyword {
+    color: var(--token-peach);
+}
+
+pre[data-lang="json"] .hljs-punctuation {
+    color: var(--token-overlay);
+}
+
+pre[data-lang="bash"] .hljs-built_in {
+    color: var(--token-red);
+    font-style: italic;
+}
+
+pre[data-lang="bash"] .hljs-meta {
+    color: var(--token-pink);
+    font-style: italic;
 }
 
 button[data-clipboard-target] {

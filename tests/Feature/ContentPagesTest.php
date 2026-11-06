@@ -48,7 +48,7 @@ it('publishes developer instructions for both stateless interfaces', function ()
         ->assertSee(route('privacy'));
 });
 
-it('highlights the developer guide code blocks with Shiki', function () {
+it('marks the developer guide code blocks for highlighting', function () {
     $this->get(route('developers'))
         ->assertOk()
         ->assertSee('data-lang="bash"', false)
