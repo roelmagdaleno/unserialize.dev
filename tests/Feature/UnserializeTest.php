@@ -1,8 +1,8 @@
 <?php
 
-use App\Livewire\Serialized;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\RateLimiter;
-use Livewire\Livewire;
 
 beforeEach(function () {
     RateLimiter::clear('unserialize:'.hash('sha256', '127.0.0.1'));
@@ -10,16 +10,14 @@ beforeEach(function () {
 
 it('renders the converter on the home page', function () {
     $this->get('/')
-        ->assertSeeLivewire(Serialized::class)
+        ->assertSee('data-converter', false)
         ->assertDontSee('Output Format')
         ->assertDontSee('value="array"', false);
 });
 
 it('validates required and serialized input with user-visible messages', function (string $serializedData, string $message) {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', $serializedData)
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData')
+    convertInBrowser($serializedData)
+        ->assertHasError()
         ->assertSee($message);
 
     $this->assertDatabaseCount('outputs', 0);
@@ -31,10 +29,8 @@ it('validates required and serialized input with user-visible messages', functio
 it('rejects serialized input larger than 256 KiB before persistence', function () {
     $serializedData = serialize(str_repeat('a', (256 * 1024) + 1));
 
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', $serializedData)
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData')
+    convertInBrowser($serializedData)
+        ->assertHasError()
         ->assertSee('The serialized data must not be greater than 262,144 bytes.');
 
     $this->assertDatabaseCount('outputs', 0);
@@ -43,10 +39,7 @@ it('rejects serialized input larger than 256 KiB before persistence', function (
 it('displays a valid conversion without persisting it', function () {
     $serializedData = 'a:1:{s:4:"name";s:6:"Chrome";}';
 
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', $serializedData)
-        ->call('unserialize')
-        ->assertNoRedirect()
+    convertInBrowser($serializedData)
         ->assertSee('"name": "Chrome"')
         ->assertSee('This result is not retained by Unserialize.');
 
@@ -59,20 +52,16 @@ it('displays a valid conversion without persisting it', function () {
 });
 
 it('displays a converted object', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'O:4:"User":2:{s:4:"name";s:3:"Ada";s:5:"email";s:15:"ada@example.com";}')
-        ->call('unserialize')
-        ->assertHasNoErrors()
+    convertInBrowser('O:4:"User":2:{s:4:"name";s:3:"Ada";s:5:"email";s:15:"ada@example.com";}')
+        ->assertHasNoError()
         ->assertSee('"name": "Ada"');
 
     $this->assertDatabaseCount('outputs', 0);
 });
 
 it('shows specific feedback for serialized objects without persistence', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'C:11:"ArrayObject":0:{}')
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData')
+    convertInBrowser('C:11:"ArrayObject":0:{}')
+        ->assertHasError()
         ->assertSee('Custom-serialized objects and enums are not supported.');
 
     $this->assertDatabaseCount('outputs', 0);
@@ -87,16 +76,12 @@ it('blocks the eleventh conversion attempt for an IP address', function () {
     $this->freezeTime();
 
     foreach (range(1, 10) as $attempt) {
-        Livewire::test(Serialized::class)
-            ->set('form.serializedData', 'invalid')
-            ->call('unserialize')
-            ->assertHasErrors('form.serializedData');
+        convertInBrowser('invalid')
+            ->assertHasError();
     }
 
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'i:1;')
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData')
+    convertInBrowser('i:1;')
+        ->assertHasError()
         ->assertSee('Too many conversion attempts. Please try again in 60 seconds.');
 
     $this->assertDatabaseCount('outputs', 0);
@@ -108,10 +93,8 @@ it('blocks the eleventh conversion attempt for an IP address', function () {
 });
 
 it('frames the broken part of the value and suggests a correction', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:10:{s:4:"names";s:6:"Chrome";}')
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData')
+    convertInBrowser('a:10:{s:4:"names";s:6:"Chrome";}')
+        ->assertHasError()
         ->assertSee('Invalid serialized data.')
         ->assertSee('declares 4 bytes but 5 bytes precede the closing quote')
         ->assertSee('Byte 6, 11 bytes marked below')
@@ -125,11 +108,8 @@ it('frames the broken part of the value and suggests a correction', function () 
 it('restores the Windows line endings a textarea removes', function () {
     $sentByTextarea = 'a:1:{s:4:"note";s:5:"a'."\n".'bc";}';
 
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', $sentByTextarea)
-        ->call('unserialize')
-        ->assertHasNoErrors()
-        ->assertSet('lineEndingsRestored', true)
+    convertInBrowser($sentByTextarea)
+        ->assertHasNoError()
         ->assertSee('"note": "a\r\nbc"')
         ->assertSee('Restored the Windows line endings (CRLF) your browser removed from this value.');
 
@@ -137,36 +117,27 @@ it('restores the Windows line endings a textarea removes', function () {
 });
 
 it('keeps the original diagnostic when restoring line endings does not help', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:1:{s:4:"note";s:9:"a'."\n".'b";}')
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData')
-        ->assertSet('lineEndingsRestored', false)
+    convertInBrowser('a:1:{s:4:"note";s:9:"a'."\n".'b";}')
+        ->assertHasError()
+        ->assertDontSee('Restored the Windows line endings')
         ->assertSee('declares 9 bytes but 6 bytes precede the closing quote');
 });
 
 it('does not announce a repair for a value that converts as sent', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:1:{s:4:"note";s:3:"a'."\n".'b";}')
-        ->call('unserialize')
-        ->assertSet('lineEndingsRestored', false)
+    convertInBrowser('a:1:{s:4:"note";s:3:"a'."\n".'b";}')
         ->assertDontSee('Restored the Windows line endings');
 });
 
 it('converts a value pasted with whitespace around it', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', "  \n".'a:1:{s:4:"name";s:6:"Chrome";}'."\n\t ")
-        ->call('unserialize')
-        ->assertHasNoErrors()
-        ->assertSet('form.serializedData', 'a:1:{s:4:"name";s:6:"Chrome";}')
+    convertInBrowser("  \n".'a:1:{s:4:"name";s:6:"Chrome";}'."\n\t ")
+        ->assertHasNoError()
+        ->assertFieldHolds('a:1:{s:4:"name";s:6:"Chrome";}')
         ->assertSee('"name": "Chrome"');
 });
 
 it('explains a paste mistake beside the diagnostic', function (string $serializedData, string $hint) {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', $serializedData)
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData')
+    convertInBrowser($serializedData)
+        ->assertHasError()
         ->assertSee('Check how it was pasted:')
         ->assertSee($hint);
 })->with([
@@ -177,17 +148,13 @@ it('explains a paste mistake beside the diagnostic', function (string $serialize
 ]);
 
 it('links a string length failure to the repair guide', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:10:{s:4:"names";N;}')
-        ->call('unserialize')
+    convertInBrowser('a:10:{s:4:"names";N;}')
         ->assertDontSee('Check how it was pasted:')
         ->assertSeeHtml('href="'.route('guides.broken-serialized-string').'"');
 });
 
 it('reports the line and column when the value spans several lines', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', "a:2:{s:7:\"one\ntwo\";N;s:3:\"abcd\";N;}")
-        ->call('unserialize')
+    convertInBrowser("a:2:{s:7:\"one\ntwo\";N;s:3:\"abcd\";N;}")
         ->assertSee('Byte 21, line 2, column 8');
 });
 
@@ -195,9 +162,7 @@ it('shows a window around the problem instead of the whole value', function () {
     $filler = str_repeat('a', 40_000);
     $serializedData = 'a:2:{i:0;s:40000:"'.$filler.'";i:1;s:4:"names";}';
 
-    $component = Livewire::test(Serialized::class)
-        ->set('form.serializedData', $serializedData)
-        ->call('unserialize')
+    $component = convertInBrowser($serializedData)
         ->assertSee('Change `s:4:` to `s:5:`.')
         ->assertSee('…');
 
@@ -208,9 +173,7 @@ it('shows a window around the problem instead of the whole value', function () {
 });
 
 it('escapes unprintable bytes and never renders submitted markup as HTML', function () {
-    $html = Livewire::test(Serialized::class)
-        ->set('form.serializedData', "a:1:{s:3:\"\x00<script>alert(1)</script>\";N;}")
-        ->call('unserialize')
+    $html = convertInBrowser("a:1:{s:3:\"\x00<script>alert(1)</script>\";N;}")
         ->html();
 
     expect(mb_check_encoding($html, 'UTF-8'))->toBeTrue()
@@ -220,9 +183,7 @@ it('escapes unprintable bytes and never renders submitted markup as HTML', funct
 });
 
 it('keeps the diagnostic excerpt away from the syntax highlighter', function () {
-    $html = Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:10:{s:4:"names";N;}')
-        ->call('unserialize')
+    $html = convertInBrowser('a:10:{s:4:"names";N;}')
         ->html();
 
     expect($html)->toContain('<pre tabindex="0" data-highlight="off" class="diagnostic-excerpt')
@@ -230,11 +191,8 @@ it('keeps the diagnostic excerpt away from the syntax highlighter', function () 
 });
 
 it('shows no diagnostic panel for failures that have no byte position', function (string $serializedData) {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', $serializedData)
-        ->call('unserialize')
-        ->assertHasErrors('form.serializedData')
-        ->assertSet('diagnostic', null)
+    convertInBrowser($serializedData)
+        ->assertHasError()
         ->assertDontSeeHtml('diagnostic-excerpt');
 })->with([
     'custom-serialized object' => ['C:11:"ArrayObject":0:{}'],
@@ -242,29 +200,66 @@ it('shows no diagnostic panel for failures that have no byte position', function
 ]);
 
 it('clears the diagnostic panel once a later conversion succeeds', function () {
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:10:{s:4:"names";N;}')
-        ->call('unserialize')
-        ->assertSee('Suggestion:')
-        ->set('form.serializedData', 'a:1:{s:4:"name";s:6:"Chrome";}')
-        ->call('unserialize')
-        ->assertSet('diagnostic', null)
+    convertInBrowser('a:10:{s:4:"names";N;}')->assertSee('Suggestion:');
+
+    convertInBrowser('a:1:{s:4:"name";s:6:"Chrome";}')
         ->assertDontSee('Suggestion:')
-        ->assertSee('"name": "Chrome"');
+        ->assertSee('"name": "Chrome"')
+        ->response->assertExactJson([
+            'serializedData' => 'a:1:{s:4:"name";s:6:"Chrome";}',
+            'error' => null,
+            'diagnostic' => '',
+            'result' => view('partials.conversion-result', [
+                'result' => "{\n    \"name\": \"Chrome\"\n}",
+                'lineEndingsRestored' => false,
+            ])->render(),
+        ]);
 });
 
-it('clears the diagnostic panel when the conversion is rate limited', function () {
+it('clears the result panel when a later conversion fails', function () {
+    convertInBrowser('a:10:{s:4:"names";N;}')
+        ->assertHasError()
+        ->response->assertJsonPath('result', '');
+});
+
+it('keeps the last result when the field is empty', function () {
+    convertInBrowser('   ')
+        ->assertSee('The serialized data field is required.')
+        ->assertFieldHolds('')
+        ->response
+        ->assertJsonPath('diagnostic', '')
+        ->assertJsonPath('result', null);
+});
+
+it('clears the diagnostic panel and keeps the last result when the conversion is rate limited', function () {
     foreach (range(1, 10) as $attempt) {
-        Livewire::test(Serialized::class)
-            ->set('form.serializedData', 'a:10:{s:4:"names";N;}')
-            ->call('unserialize')
-            ->assertSee('Suggestion:');
+        convertInBrowser('a:10:{s:4:"names";N;}')->assertSee('Suggestion:');
     }
 
-    Livewire::test(Serialized::class)
-        ->set('form.serializedData', 'a:10:{s:4:"names";N;}')
-        ->call('unserialize')
-        ->assertSet('diagnostic', null)
+    convertInBrowser(' a:10:{s:4:"names";N;}')
         ->assertDontSeeHtml('diagnostic-excerpt')
-        ->assertSee('Too many conversion attempts.');
+        ->assertSee('Too many conversion attempts.')
+        ->assertFieldHolds(' a:10:{s:4:"names";N;}')
+        ->response->assertJsonPath('result', null);
 });
+
+it('prefills the field in the page itself with an example that converts', function () {
+    $html = $this->get('/')->assertOk()->getContent();
+
+    preg_match('#<textarea[^>]*>(.*?)</textarea>#s', $html, $field);
+
+    convertInBrowser(html_entity_decode($field[1], ENT_QUOTES))->assertHasNoError();
+});
+
+it('answers a body that is not valid UTF-8 without failing', function () {
+    convertInBrowser("s:3:\"\xFF\xFE\xFD\";")->response->assertOk();
+    convertInBrowser("\xFF")->assertHasError();
+});
+
+it('leaves the session and CSRF protection off the stateless endpoints', function (string $route) {
+    $middleware = app('router')->gatherRouteMiddleware(app('router')->getRoutes()->getByName($route));
+
+    expect($middleware)
+        ->not->toContain(StartSession::class)
+        ->not->toContain(PreventRequestForgery::class);
+})->with(['conversion.convert', 'conversion.copied']);

@@ -29,14 +29,11 @@ const blockObserver = new IntersectionObserver(async (entries) => {
     visibleBlocks.forEach((block) => highlightElement(block, languageLoaders[block.dataset.lang]));
 }, { rootMargin: '200px' });
 
-function observeBlocks() {
-    document.querySelectorAll(highlightableBlocks).forEach((block) => blockObserver.observe(block));
+function observeBlocks(root) {
+    root.querySelectorAll(highlightableBlocks).forEach((block) => blockObserver.observe(block));
 }
 
-observeBlocks();
+observeBlocks(document);
 
-// Livewire morphs the highlighted markup back to plain text whenever the
-// component re-renders, so the blocks are observed again afterwards.
-document.addEventListener('livewire:init', () => {
-    Livewire.hook('morphed', observeBlocks);
-});
+// A conversion replaces only its own panel, so only that panel's blocks are new.
+document.addEventListener('conversion:rendered', (event) => observeBlocks(event.target));

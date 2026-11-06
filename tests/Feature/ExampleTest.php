@@ -10,9 +10,8 @@ it('renders an appearance dropdown with light, dark, and system options', functi
     $this->get('/')
         ->assertSee('Preferred color scheme')
         ->assertSeeInOrder(['Light', 'Dark', 'System'])
-        ->assertSee('$flux.appearance = \'light\'', false)
-        ->assertSee('$flux.appearance = \'dark\'', false)
-        ->assertSee('$flux.appearance = \'system\'', false)
-        ->assertDontSee('x-model="$flux.dark"', false)
+        ->assertSee('data-theme-choice="light"', false)
+        ->assertSee('data-theme-choice="dark"', false)
+        ->assertSee('data-theme-choice="system"', false)
         ->assertSee('dark:bg-zinc-900', false);
 });

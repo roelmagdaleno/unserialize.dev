@@ -20,7 +20,7 @@ $published = [
     'resources/views/privacy.blade.php',
     'resources/views/markdown/privacy.blade.php',
     'resources/views/markdown/home.blade.php',
-    'resources/views/livewire/serialized.blade.php',
+    'resources/views/home.blade.php',
 ];
 
 it('advertises the real input limit in every published artifact', function (string $path) {

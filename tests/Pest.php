@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
+use Tests\ConverterResponse;
 use Tests\TestCase;
 
 /*
@@ -17,3 +18,16 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
     ->use(LazilyRefreshDatabase::class)
     ->in('Feature');
+
+/**
+ * Submit one value to the converter the way its page does: as the raw body.
+ */
+function convertInBrowser(string $serializedData): ConverterResponse
+{
+    return new ConverterResponse(test()->call(
+        'POST',
+        route('conversion.convert'),
+        server: ['CONTENT_TYPE' => 'text/plain;charset=UTF-8', 'HTTP_ACCEPT' => 'application/json'],
+        content: $serializedData,
+    ));
+}

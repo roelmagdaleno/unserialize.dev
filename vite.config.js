@@ -11,7 +11,9 @@ export default defineConfig({
                 'resources/css/code.css',
                 'resources/js/app.js',
                 'resources/js/clipboard.js',
-                'resources/js/highlight.js'
+                'resources/js/converter.js',
+                'resources/js/highlight.js',
+                'resources/js/theme.js',
             ],
             refresh: true,
             detectTls: 'unserialize.test',

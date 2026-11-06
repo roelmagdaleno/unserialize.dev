@@ -3,10 +3,8 @@
 /**
  * Limits the conversion surfaces share.
  *
- * The browser, the HTTP API and the MCP endpoint all refuse at the same rate.
- * That number used to be written three times -- twice as `Limit::perMinute(10)`
- * and once as a private constant on the Livewire component -- so raising it on
- * one surface silently left the other two behind.
+ * The browser, the HTTP API and the MCP endpoint all refuse at the same rate, so
+ * the number lives here rather than on any one surface.
  */
 return [
 

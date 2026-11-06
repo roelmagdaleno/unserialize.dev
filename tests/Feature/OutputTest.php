@@ -1,17 +1,16 @@
 <?php
 
 use App\Models\Output;
-use Livewire\Livewire;
 
 it('redirects to home page when visit outputs page without id', function () {
     $this->get('/o')->assertRedirect('/');
 });
 
-it('gets the output component on output page', function () {
+it('gets the output page', function () {
     $output = Output::factory()->create();
 
     $this->get('/o/'.$output->id)
-        ->assertSeeLivewire(App\Livewire\Output::class)
+        ->assertOk()
         ->assertHeader('X-Robots-Tag', 'noindex, nofollow, noarchive')
         ->assertSee('<meta name="robots" content="noindex, nofollow, noarchive">', false)
         ->assertDontSee('<link rel="canonical"', false);
@@ -26,7 +25,7 @@ it('returns noindex for a missing legacy output', function () {
 it('sees the output data on output page', function () {
     $output = Output::factory()->create();
 
-    Livewire::test(App\Livewire\Output::class, ['output' => $output])
+    $this->get(route('outputs', $output))
         ->assertSee('Output: JSON')
         ->assertSee($output->created_at);
 });
@@ -37,7 +36,7 @@ it('renders legacy array output records', function () {
         'output_format' => 'array',
     ]);
 
-    Livewire::test(App\Livewire\Output::class, ['output' => $output])
+    $this->get(route('outputs', $output))
         ->assertSee('Output: Array')
         ->assertSee('Chrome');
 });
